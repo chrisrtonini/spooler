@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<gtodo>
+  <category title="Pessoal" place="0"/>
+  <category title="Neg&#xF3;cios" place="1"/>
+  <category title="Indefinida" place="2">
+    <item>
+      <attribute id="1435691368" priority="2" done="1" start_date="735779" completed_date="735780" notify="0" last_edited="1435784825"/>
+      <summary>Par&#xE2;metros em pacotes</summary>
+      <comment>Para evitar memory leaks, ajustar "add_param", de modo a efetuar c&#xF3;pia do par&#xE2;metro, e adicionar esta c&#xF3;pia &#xE0; lista.
+Tamb&#xE9;m, ao destruir a lista, eliminar as inst&#xE2;ncias din&#xE2;micas de par&#xE0;metros vinculados.</comment>
+    </item>
+  </category>
+  <category title="ECFs" place="3">
+    <item>
+      <attribute id="1438186495" priority="0" done="0" start_date="735808" enddate="99999999" notify="0" endtime="-60" last_edited="1438186495"/>
+      <summary>Status</summary>
+      <comment>Encotrar uma forma de alimentar a propriedade do objeto 'ecf' que cont&#xE9;m registrador de status do equipamento, de modo a saber se h&#xE1; Redu&#xE7;&#xE3;o Z pendente, se j&#xE1; houve redu&#xE7;&#xE3;o no movimento do dia, ou se a situa&#xE7;&#xE3;o &#xE9; regular (ou seja, movimento em aberto, AINDA sem necessidade de redu&#xE7;&#xE3;o).
+</comment>
+    </item>
+    <item>
+      <attribute id="1438186739" priority="0" done="0" start_date="735808" enddate="99999999" notify="0" endtime="-60" last_edited="1438186739"/>
+      <summary>Al&#xED;quotas</summary>
+      <comment>Definir e implementar estrutura de dados em disco, paralelamente ao ECF, para manter registros de al&#xED;quotas cadastradas.
+O objetivo, &#xE9; racionalizar o processamento de al&#xED;quotas, tirando vantagem dos atributos do objeto 'aliquota', o qual disp&#xF4;e de um atributo 'cst', atualmente n&#xE3;o inicializado, quando se carrega a tabela de al&#xED;quotas do ECF.
+A partir do uso dessa informa&#xE7;&#xE3;o, o atributo 'tipo', passaria unicamente a diferenciar ICMS e ISS.</comment>
+    </item>
+    <item>
+      <attribute id="1438215821" priority="1" done="0" start_date="735808" enddate="99999999" notify="0" endtime="-60" last_edited="1438215821"/>
+      <summary>Reset</summary>
+      <comment>Ver o comando Bematech_FI_ResetaImpressora(), que supostamente reseta o equipamento em caso de erro.</comment>
+    </item>
+    <item>
+      <attribute id="1438186907" priority="2" done="1" start_date="735808" completed_date="735810" enddate="735808" notify="1" endtime="-60" last_edited="1438333648"/>
+      <summary>Formas de Pagamento</summary>
+      <comment>Modificar a implementa&#xE7;&#xE3;o do objeto 'ecf_bemateh' para que, sempre que poss&#xED;vel, ao utilizar uma Forma de Pagamento, isto seja feito pelo seu &#xED;ndice, e n&#xE3;o pelo nome/descri&#xE7;&#xE3;o.
+O objetivo &#xE9; evitar problemas de diferencia&#xE7;&#xE3;o entre mai&#xFA;sculas e min&#xFA;sculas, bem como ignorar a presen&#xE7;a de qualquer caracter n&#xE3;o imprim&#xED;vel.</comment>
+    </item>
+    <item>
+      <attribute id="1438333709" priority="2" done="0" start_date="735810" enddate="99999999" notify="0" endtime="-60" last_edited="1438333709"/>
+      <summary>TAGs</summary>
+      <comment>Na classe ecf_broker, alterar as constantes com nomes de par&#xE2;metros de pacotes, para utilizar constantes simb&#xF3;licas.</comment>
+    </item>
+    <item>
+      <attribute id="1443099235" priority="1" done="0" start_date="735865" enddate="99999999" notify="0" endtime="-60" last_edited="1443099235"/>
+      <summary>Monitor de servi&#xE7;o</summary>
+      <comment>Criar script para monitorar servi&#xE7;o "ecf_spooler".
+Este script deve rodar ele pr&#xF3;prio como um servi&#xE7;o, e reiniciar o "ecf_spooler" sempre que detectar sua interrup&#xE7;&#xE3;o por signal 11 (SIGSEGV).</comment>
+    </item>
+  </category>
+</gtodo>

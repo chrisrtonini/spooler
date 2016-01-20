@@ -1,0 +1,37 @@
+Spooler
+-------
+
+Aplicativo 'middleware' que cria camada abstrata entre o sistema Solidus, e o
+equipamento Emissor de Cupons Fiscais (ECF).
+Seu funcionamento e' baseado na coleta de arquivos de texto, contendo comandos
+de acordo com o protocolo utilizados pelo Solidus, desde sua versão 5.0.
+Apos coletar o arquivo, seu conteudo e' processado de maneira a ser validado
+e devidamente enviado ao ECF conectado. A resposta do ECF, e' codificada no 
+mesmo formato, e um novo arquivo de texto contendo a resposta ao comando soli-
+citado, e' gravado no diretorio de trabalho.
+
+A conexao com o ECF se da' pela integracao de biblioteca de ligacao dinamica,
+fornecida pelo fabricante do equipamento. E, e' imprescindivel que esta esteja
+instalada, para a correta montagem e execucao do 'spooler'.
+
+O comportamento da aplicacao, e' parametrizado pelos argumentos contidos em
+arquivo de configuracao ('/etc/spooler/spooler.cfg').
+As tags e seus significados, bem como valores padrao, sao os seguintes:
+
++-------------------------------+---------------------------------------------+
+| <tag>=<valor padrao>          | Descricao                                   |
++-------------------------------+---------------------------------------------+
+| ecf=BEMATECH                  | Driver de ECF a ser utilizado.              |
+| log_file=/var/log/spooler.log | Arquivo onde deverao ser gravados logs      |
+| log_level=2                   | Granularidade de log: 0= ERROR, 1= WARNING, |
+|                               |                     2=INFO, 3=DEBUG, 4=DATA |
+| log_verbose=0                 | Indica se deve ecoar logs tambem na console |
+| work_dir=/sgi/pdv/rel/        | Diretorio onde deve ser coletados arquivos  |
+| cmd_id=arqcmd                 | Mascara para encontrar arquivos de comando  |
+| ret_id=arqret                 | Mascara para gerar arquivos de retorno      |
+| lck_suffix=.lck               | Sufixo para arquivos de bloqueio (Solidus)  |
+| tmp_ret=_rqret                | Mascara para arq. temporarios de retorno    |
+| scan_delay=500000             | Tempo (milissegundos) entre buscas comandos |
+| deliver_delay=0               | Tempo antes de gravar arquivo de retorno    |
++-------------------------------+---------------------------------------------+
+

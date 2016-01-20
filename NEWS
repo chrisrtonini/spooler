@@ -1,0 +1,6 @@
+A partir da versao 3.0, ha implementacoes especificas para invocar rotinas da
+biblioteca da Bematech, com sufixo "CV0909".
+
+A partir do release 3.4, o pacote passou a incluir uma serie de utilitarios
+para realizacao de carga das tabelas de ECF, a partir do conteudo de arquivos
+de texto.

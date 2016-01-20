@@ -1,0 +1,28 @@
+3.5.0
+=====
+
+Corrigido o valor recebido pelo spooler, para indicacao da vinculacao
+de TEF. Ate então os valores "0" e "1" eram recebidos e passados diretamente
+aos drivers. Para adequacao ao Solidus, os valores esperados a partir deste
+release sao "false" e "true" respectivamente. As subsequentes conversoes ficam
+a cargo de cada driver de dispositivo.
+
+Incluido no pacote, o utilitario setup_fpgto.pl, responsavel por carregar a
+tabela de formas de pagamento do ECF, a partir de um arquivo de texto 
+especificamente formatado para isso.
+
+Alterado o driver default de BEMATECH para BEMATECH_CV0909.
+
+	3.5.3
+	-----
+	Modificada rotina "formata_valor" para limpar qualquer espaco em branco
+	antes ou depois do valor numerico formatado.
+
+	3.5.6
+	-----
+	Adicionada flag "run_bckground" ao arquivo de configuracoes "spooler.cfg",
+	cuja valor logico (1 ou 0) indica se a aplicacao deve rodar em background
+	ou foreground, respectivamente.
+	Adicionada referencia aa biblioteca "dl" no processo de linkedicao (a
+	partir do release 3.6.7a).
+	

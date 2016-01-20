@@ -1,0 +1,6 @@
+get_modelo()
+
+CPMFSCAL Linha:16222 Erro:16
+[16:32:09] André R. de Moura: CPMFSCAL Linha:15934 Erro:16
+[16:32:24] André R. de Moura: e ai esta dando estes erros
+[16:32:25] André R. de Moura: CPMFSCAL Linha:16723 Erro:16
