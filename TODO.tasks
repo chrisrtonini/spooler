@@ -47,4 +47,11 @@ O objetivo &#xE9; evitar problemas de diferencia&#xE7;&#xE3;o entre mai&#xFA;scu
 Este script deve rodar ele pr&#xF3;prio como um servi&#xE7;o, e reiniciar o "ecf_spooler" sempre que detectar sua interrup&#xE7;&#xE3;o por signal 11 (SIGSEGV).</comment>
     </item>
   </category>
+  <category title="Implanta&#xE7;&#xE3;o" place="4">
+    <item>
+      <attribute id="1453987565" priority="2" done="0" start_date="735991" enddate="99999999" notify="0" endtime="-60" last_edited="1453987565"/>
+      <summary>Manuten&#xE7;&#xE3;o al&#xED;quotas</summary>
+      <comment>Implementar mecanismo para alimentar tabela de "Totalizadores Fiscais" (al&#xED;quotas tribut&#xE1;rias) no arquivo "/etc/bemafi.xml", a partir do que h&#xE1; na Mem&#xF3;ria Fiscal do equipamento (ECF).</comment>
+    </item>
+  </category>
 </gtodo>

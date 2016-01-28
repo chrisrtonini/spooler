@@ -26,3 +26,10 @@ Alterado o driver default de BEMATECH para BEMATECH_CV0909.
 	Adicionada referencia aa biblioteca "dl" no processo de linkedicao (a
 	partir do release 3.6.7a).
 	
+	3.5.9
+	-----
+	Adicionado metodo ecf_bematech::get_data_hora_ult_red(void). Este devera
+	alimentar as propriedades m_dt_ult_red e m_hr_ult_red (ambos std::string)
+	e que manterao os valores da data e hora da ultima reducao Z, respectiva-
+	mente. Estes valores serao resetados, como forma de forcar sua realimenta-
+	cao, na execucao de ecf_bematech::reducao_z(void).

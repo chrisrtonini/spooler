@@ -216,6 +216,7 @@ class ecf_bematech : public ecf
 	protected:
 		void				get_data_hora_atual(char* data, char* hora);
 		void				get_data_hora_ult_red(char* data, char* hora);
+		void				get_data_hora_ult_red(void);
 		void				set_status(const bematech_status_mfd sts);
 
 		short				idx_element(const std::string& item,
@@ -237,6 +238,8 @@ class ecf_bematech : public ecf
 		std::string			m_marca;
 		std::string			m_modelo;
 		std::string			m_tipo;
+		std::string			m_dt_ult_red;
+		std::string			m_hr_ult_red;
 		std::string			format_monetary(float valor, const char* fmt);
 
 //	private:

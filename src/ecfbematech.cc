@@ -647,21 +647,83 @@ std::string ecf_bematech::get_data_mvto(void)
 
 
 /**
+ * \brief Obtém data e hora da última Redução Z.
+ * \note Alimenta propriedades da instância para uso futuro.
+ */
+void ecf_bematech::get_data_hora_ult_red(void)
+{
+	char	data[7],
+		hora[7];
+
+	debug_log("ecf_bematech::get_data_hora_ult_red()");
+
+	memset(data, 0, sizeof(data));
+	memset(hora, 0, sizeof(hora));
+
+	try	{
+		get_data_hora_ult_red(data, hora);
+
+		// Obtenção da hora
+		std::string tmp_hora = hora;
+		trim(tmp_hora);
+
+		if (m_hr_ult_red.empty() && (!tmp_hora.empty()))
+			m_hr_ult_red = tmp_hora;
+
+		// Obtenção e formatação da data
+		std::string tmp_data = data;
+		trim(tmp_data);
+
+		if (m_dt_ult_red.empty() && (!tmp_data.empty()))	{
+			char ano[3], mes[3], dia[3];
+
+			memset(ano, 0, sizeof(ano));
+			memset(mes, 0, sizeof(mes));
+			memset(dia, 0, sizeof(dia));
+
+			strncpy(ano, data + 4, 2);
+			m_dt_ult_red = "20";
+			m_dt_ult_red += ano;
+
+			strncpy(mes, data + 2, 2);
+			m_dt_ult_red += mes;
+
+			strncpy(dia, data + 0, 2);
+			m_dt_ult_red += dia;
+		}
+
+		xdebug_log(std::string(
+			"ecf_bematech::get_data_hora_ult_red() = ") +
+			dquote(m_dt_ult_red.c_str()) + std::string(" | ") +
+			dquote(m_hr_ult_red.c_str()));
+	}
+	catch (...)	{
+		throw;
+	}
+}
+
+
+/**
  \brief Obtém data e hora da última Redução Z.
  \param data Referência a vetor de 'char' onde será armazenada a data.
  \param hora Referẽncia a vetor de 'char' onde será armazenada a hora.
  */
 void ecf_bematech::get_data_hora_ult_red(char* data, char* hora)
 {
-	debug_log("ecf_bematech::get_data_hora_ult_red()");
-	
-	try {
-		xdebug_log("Bematech_FI_DataHoraReducao(...)");
-		check(Bematech_FI_DataHoraReducao(data, hora));
+	debug_log("ecf_bematech::get_data_hora_ult_red(...)");
+
+	if (m_hr_ult_red.empty() || m_dt_ult_red.empty())	{
+		try {
+			xdebug_log("Bematech_FI_DataHoraReducao(...)");
+			check(Bematech_FI_DataHoraReducao(data, hora));
+		}
+		catch (...) {
+			throw;
+		}
 	}
-	catch (...) {
-		throw;
-	}
+
+	xdebug_log(std::string("ecf_bematech::get_data_hora_ult_red(...) = ") +
+		dquote(data) + std::string(" | ") + dquote(hora));
 }
 
 
@@ -673,37 +735,17 @@ std::string ecf_bematech::get_data_ult_red(void)
 {
 	debug_log("ecf_bematech::get_data_ult_red()");
 	
-	char		data[7],
-				hora[7],
-				ano[3],
-				mes[3],
-				dia[3];
-	std::string ret;
-
 	try {
-		get_data_hora_ult_red(data, hora);
-
-		memset(ano, 0, sizeof(ano));
-		strncpy(ano, data+4, 2);
-		ret = "20";
-		ret += ano;
-
-		memset(mes, 0, sizeof(mes));
-		strncpy(mes, data+2, 2);
-		ret += mes;
-
-		memset(dia, 0, sizeof(dia));
-		strncpy(dia, data+0, 2);
-		ret += dia;
+		get_data_hora_ult_red();
 	}
 	catch (...) {
 		throw;
 	}
 
 	xdebug_log(std::string("ecf_bematech::get_data_ult_red() = ") +
-	    dquote(ret.c_str()));
+	    dquote(m_dt_ult_red.c_str()));
 
-	return ret.c_str();
+	return m_dt_ult_red.c_str();
 }
 
 
@@ -715,20 +757,17 @@ std::string ecf_bematech::get_hora_ult_red(void)
 {
 	debug_log("ecf_bematech::get_hora_ult_red()");
 	
-	char	data[7],
-			hora[7];
-
 	try {
-		get_data_hora_ult_red(data, hora);
+		get_data_hora_ult_red();
 	}
 	catch (...) {
 		throw;
 	}
 
 	xdebug_log(std::string("ecf_bematech::get_hora_ult_red() = ") + 
-	    dquote(hora));
+	    dquote(m_hr_ult_red.c_str()));
 
-	return hora;
+	return m_hr_ult_red.c_str();
 }
 
 
@@ -1933,8 +1972,11 @@ void ecf_bematech::reducao_z(void)
 	try {
 		xdebug_log("Bematech_FI_ReducaoZ(\"\", \"\")");
 
-		if (!fake())
+		if (!fake())	{
 			check(Bematech_FI_ReducaoZ(data, hora));
+			m_dt_ult_red = "";
+			m_hr_ult_red = "";
+		}
 		else
 			debug_log("FAKE >> Bematech_FI_ReducaoZ");
 		
