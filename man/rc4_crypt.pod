@@ -1,0 +1,79 @@
+=pod
+
+=head1 NOME
+
+B<rc4_crypt> - UtilitE<aacute>rio para cifrar e decifrar dados, utilizando o
+protocolo RC4.
+
+=head1 SINOPSE
+
+B<rc4_crypt> I<SENHA> I<OPERACAO> I<DADOS>
+
+=head1 DESCRICAO
+
+O I<rc4_crypt> gera um hash MD5 a partir da I<SENHA> informada, e o utiliza 
+para definir a chave criptogrE<aacute>fica para o protocolo RC4.
+
+O argumento I<OPERACAO> determina se a operaE<ccedil>E<atilde>o serE<aacute>
+para cifrar (B<C>) ou decifrar (B<D>) os I<DADOS> informados. Estes pode ser
+delimitados por ASPAS DUPLAS, se forem mais do que uma palavra.
+
+A massa de dados transformada (cifrada ou decifrada) serE<aacute> escrita
+diretamente para B<stdout>.
+
+Caso algum erro ocorra, uma mensagem explicativa serE<aacute> escrita em
+B<stderr>.
+
+Caso a operacao seja realizada corretamente, a aplicaE<ccedil>E<atilde>o
+encerrarE<aacute> sua execuE<ccedil>E<atilde>o retornando o cE<oacute>digo
+B<0> (ZERO). Caso contrE<aacute>rio, B<1>.
+
+=over 7
+
+=item B<IMPORTANTE:>
+
+O aplicativo faz uso da biblioteca I<libcrypto>, que E<eacute> distribuida
+como parte da I<openssl>, tendo portanto, vE<iacute>nculo dinE<acirc>mico com
+estE<aacute>. Que por essa razE<atilde>o, deve estar presente no sistema para
+o funcionamento do utilitE<aacute>rio.
+
+=back
+
+=head1 OPCOES
+
+=over 7
+
+=item B<SENHA>
+
+Texto, no formato B<texto> ou "B<bloco de texto>" (caso contenha 
+espaE<ccedil>os em branco) utilizado para codificar  e/ou decodificar os dados.
+
+=item B<OPERACAO>
+
+=over 9
+
+=item B<C>
+
+Informa que os dados devem ser B<codificados>.
+
+=item B<D>
+
+Informa que os dados devem ser B<decodificados>.
+
+=back
+
+=item B<DADOS>
+
+Dados em formato texto, para codificar, ou I<string> hexadecimal contendo
+dados jE<aacute> codificados, para decodificar.
+
+Caso o texto contenha espaE<ccedil>os em branco, deve ser entE<atilde>o
+delimitado por ASPAS DUPLAS.
+
+=back
+
+=head1 AUTOR
+
+L<Chris Robert Tonini|mailto:chrisrtonini@gmail.com>
+
+=cut

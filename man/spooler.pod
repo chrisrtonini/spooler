@@ -1,0 +1,75 @@
+=pod
+
+=head1 NOME
+
+B<spooler> - Gateway de comunicaE<ccedil>E<atilde>o com ECFs.
+
+=head1 SINOPSE
+
+B<spooler> [I</arquivo/de/configuracao.ini>]
+
+=head1 DESCRICAO
+
+Cria camada de abstraE<ccedil>E<atilde>o entre o Solidus e o equipamento
+Emissor de Cupons Fiscais (ECF).
+
+Opera atravE<eacute>s da coleta de pacotes de comando, contendo 
+instruE<ccedil>E<otilde>es para invocaE<ccedil>E<atilde>o de chamadas
+E<agrave>s bibliotecas de comunicaE<ccedil>E<atilde>o de ECF (fornecidas
+pelos seus respectivos fabricantes).
+
+As respostas fornecidas pelas bibliotecas sE<atilde>o devidamente codificadas
+em pacotes de retorno e entregues E<agrave> aplicaE<ccedil>E<atilde>o 
+integrada.
+
+=over 7
+
+=item B<OBSERVACOES:>
+
+Apesar da estrutura modular suportar virtualmente qualquer canal de 
+comunicaE<ccedil>E<atilde>O para coleta de comandos e entrega dos retornos,
+atE<eacute> a presente versE<atilde>o, o E<uacute>nico mecanismo implementado
+E<eacute> o baseado em troca de arquivos de texto. Estes, seguindo as regras
+sintE<aacute>ticas de protocolo proprietE<aacute>rio, especE<iacute>fico do
+sistema Solidus.
+
+Analogamente, o aplicativo oferece suporte, virtualmente, a qualquer 
+equipamento - desde que o fabricante forneE<ccedil>a biblioteca(s) de 
+comunicaE<ccedil>E<atilde>o - mas, atE<eacute> a versE<atilde>o atual, os
+modelos de equipamentos integrados (e devidamente testados) sE<atilde>o:
+
+=over 10
+
+=item B<Bematech>
+
+Modelos B<MP-2100>, B<MP-4000> e B<MP-4200> (esta E<uacute>ltima, em 
+conformidade com o convE<ecirc>nio 09/09).
+
+=back
+
+=back
+
+=head1 ARQUIVOS
+
+O E<uacute>nico argumento que o aplicativo aceita, E<eacute> o I<path> do 
+rquivo de configuraE<ccedil>E<otilde>es, contendo definiE<ccedil>E<otilde>es
+bE<aacute>sicas para sua execuE<ccedil>E<atilde>o. E<Eacute> importante 
+observar que o aplicativo B<NE<Atilde>O FUNCIONA SEM UM ARQUIVO DE 
+CONFIGURAE<Ccedil>E<Otilde>ES>>, no entanto nE<atilde>o E<eacute> 
+obrigatE<oacute>rio informar um I<path>, pois, por padrE<atilde>o, E<eacute>
+assumido F</etc/spooler/spooler.conf>.
+
+=head1 VEJA TAMBEM
+
+Detalhes sobre o formado do arquivo de configuraE<ccedil>E<otilde>es 
+sE<atilde>o encontrados em L<spooler.cfg(5)>.
+
+Ajuda para a execuE<ccedil>E<atilde>o do serviE<ccedil>o de 
+comunicaE<ccedil>E<atilde>o com ECFs em L<ecf_spooler(8)>.
+
+=head1 AUTOR
+
+L<Chris Robert Tonini|mailto:chrisrtonini@gmail.com>
+
+=cut
+

@@ -1,0 +1,134 @@
+=pod
+
+=head1 NOME
+
+B<spooler.cfg> - ConfiguraE<ccedil>E<otilde>es para o I<gateway> de ECFs.
+
+=head1 DESCRICAO
+
+E<Eacute> um arquivo de texto, contendo uma lista simples de 
+opE<ccedil>E<otilde>es dispostas em C<chave=valor>.
+
+Cada chave determina uma caracterE<iacute>stica de uso do aplicativo, e a
+lista E<eacute> passE<iacute>vel de alteraE<ccedil>E<otilde>es entre uma
+versE<atilde>o e outra do pacote.
+
+A seguir, descriE<ccedil>E<atilde>o detalhada de cada 
+configuraE<ccedil>E<atilde>o.
+
+=over 7
+
+=item I<ecf>
+
+IdentificaE<ccedil>E<atilde>o do I<driver> que o I<gateway> deve utilizar.
+
+Nesta versE<atilde>o, sE<atilde>o suportados os valores: B<BEMATECH> e
+B<BEMATECH_CV0909>.
+
+=item I<ecf_settings>
+
+I<Path> para arquivo contendo configuraE<ccedil>E<otilde>es especE<iacute>ficas
+para o I<driver> utilizado.
+
+Por exemplo: F</etc/spooler/bematech_cv0909.cfg>
+
+=item I<log_file>
+
+Arquivo de texto onde a aplicaE<ccedil>E<atilde>o registrarE<aacute> seu I<log>
+de execuE<ccedil>E<atilde>o.
+
+=item I<log_level>
+
+NE<iacute>vel de granularidade das mensagens de log, sendo:
+
+=over 10
+
+=item B<0=ERROR>
+
+Registra apenas mensagens de erro.
+
+=item B<1=WARNING>
+
+Registra alE<eacute>m das mensagens de erro, tambE<eacute>m mensagens de 
+advertE<ecirc>ncia.
+
+=item B<2=INFO>
+
+AlE<eacute>m das mensages de erro e advertE<ecirc>ncia, registra 
+informaE<ccedil>E<otilde>es de execuE<ccedil>E<atilde>o.
+
+=item B<3=DEBUG>
+
+Registra, alE<eacute>m das ja descritas acima, as mensagens de 
+depuraE<ccedil>E<atilde>o do aplicativo. Este nE<iacute>vel apenas
+E<eacute> usual em ambientes experimentais, pois produzem registros
+que apenas se destinam a ambientes de teste.
+
+=item B<4=DATA>
+
+Granularidade complementar E<agrave> anterior. Faz exatamente o mesmo que
+B<DEBUG>, porE<eacute>m registra tambE<eacute>, no I<log>, dados e/ou
+estruturas de dados relacionadas aos pontos testados.
+
+=back
+
+=item I<log_verbose>
+
+Caso seja definido com valor verdadeiro (B<1>), provoca a saE<iacute>da de
+todas as mensagens de I<log>, simultaneamente para o terminal (ou console).
+
+=item I<run_background>
+
+Caso seja definido como verdadeiro (B<1>), determina que o processo deve rodar
+em segundo plano.
+
+=item I<work_dir>
+
+I<Path> onde deverE<atilde>o ser lidos os arquivos de comando e gravados seus
+respetivos arquivos de resposta.
+
+=item I<cmd_id>
+
+Prefixo dos arquivos de comando a coletar.
+
+=item I<ret_id>
+
+Prefixo dos arquivos de retorno a gerar.
+
+=item I<lck_suffix>
+
+Sufixo para os arquivos de bloqueio, que sinalizam como um semE<aacute>foro,
+ao sistema Solidus, quando um arquivo de resposta estE<aacute> pronto para
+ser lido.
+
+=item I<tmp_ret>
+
+Prefixo para os arquivos de resposta temporE<aacute>rios. O nome final somente
+E<eacute> atribuE<iacute>do quando seu conteE<uacute>do estiver completo.
+
+Essa implementaE<ccedil>E<atilde>o evita I<short read> ao coletar um pacote de
+resposta.
+
+=item I<scan_delay>
+
+Intervalo de tempo, em milissegundos, entre varreduras de diretE<oacute>rio.
+
+A varredura de diretE<oacute>rio apenas E<eacute> utilizada logo que o
+aplicativo E<eacute> iniciado. Uma vez que o diretE<oacute>rio nE<atilde>o
+contenha nenhum arquivo de comando a processar, o mE<eacute>todo de coleta
+baseia-se no monitoramento do diretE<oacute>rio com uso de I<syscall>.
+
+=item I<deliver_delay>
+
+I<Delay> antes de gravar arquivo de retorno.
+
+Este atributo nE<atilde>o estE<aacute> mais em uso. Mantido apenas por fim de
+compatibilidade.
+
+=back
+
+=head1 VEJA TAMBEM
+
+L<spooler(1)>, L<ecf_spooler(8)>
+
+=cut
