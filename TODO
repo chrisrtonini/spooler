@@ -1,0 +1,16 @@
+* Implementar primitivas de servico:
+		ecf_status_request
+		ecf_reset_request
+	Sem essas, a compatibilidade com a ECF Suite fica limitada, e algumas
+	operacoes passam a exigir start/stop do spooler.
+
+* Especificar mecanismo para sinalizar, apos cadastramento de aliquotas tri-
+	butarias, que a primitiva 'reconf' deve ser invocada, para atualizar o
+	conteudo de '/etc/bemafi.xml'.
+
+* Rodar spooler como usuario comum (sgi:sgi), e nao como 'root'. Para isso
+	o lancador do servico precisa liberar acessa aa porta de comunicacao,
+	quando for o caso, e aos arquivos de uso da libbemafiscal.
+
+* Definir constantes e fazer a substituicao no formato de conversao para
+	o ATO COTEPE, no comando convertemfd
