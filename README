@@ -1,5 +1,5 @@
-Spooler
--------
+                                 S P O O L E R
+                                 =============
 
 Aplicativo 'middleware' que cria camada abstrata entre o sistema Solidus, e o
 equipamento Emissor de Cupons Fiscais (ECF).
@@ -14,24 +14,45 @@ A conexao com o ECF se da' pela integracao de biblioteca de ligacao dinamica,
 fornecida pelo fabricante do equipamento. E, e' imprescindivel que esta esteja
 instalada, para a correta montagem e execucao do 'spooler'.
 
-O comportamento da aplicacao, e' parametrizado pelos argumentos contidos em
-arquivo de configuracao ('/etc/spooler/spooler.cfg').
-As tags e seus significados, bem como valores padrao, sao os seguintes:
 
-+-------------------------------+---------------------------------------------+
-| <tag>=<valor padrao>          | Descricao                                   |
-+-------------------------------+---------------------------------------------+
-| ecf=BEMATECH                  | Driver de ECF a ser utilizado.              |
-| log_file=/var/log/spooler.log | Arquivo onde deverao ser gravados logs      |
-| log_level=2                   | Granularidade de log: 0= ERROR, 1= WARNING, |
-|                               |                     2=INFO, 3=DEBUG, 4=DATA |
-| log_verbose=0                 | Indica se deve ecoar logs tambem na console |
-| work_dir=/sgi/pdv/rel/        | Diretorio onde deve ser coletados arquivos  |
-| cmd_id=arqcmd                 | Mascara para encontrar arquivos de comando  |
-| ret_id=arqret                 | Mascara para gerar arquivos de retorno      |
-| lck_suffix=.lck               | Sufixo para arquivos de bloqueio (Solidus)  |
-| tmp_ret=_rqret                | Mascara para arq. temporarios de retorno    |
-| scan_delay=500000             | Tempo (milissegundos) entre buscas comandos |
-| deliver_delay=0               | Tempo antes de gravar arquivo de retorno    |
-+-------------------------------+---------------------------------------------+
+FUNCIONAMENTO:
+--------------
 
+O spooler ira' recolher arquivos de comando, nomeados de acordo com a mascara
+especificada (normalmente 'arqcmd.*') no diretorio de trabalho especificado.
+O monitoramente e' feito por notificadao do kernel (inotify), portanto, ja' no
+momento que o arquivo for gravado, ja' sera' sinalizado. Assim, e' recomendavel
+que a aplicacao integrada gere arquivos com outro nome, e apenas RENOMEIE para
+o formato da mascara, APOS concluir sua edicao.
+Depois disso, o spooler ira' coletar o arquivo e processar seu conteudo. Ao
+termino desse processo, gerara' dois novos arquivos, o primeiro, baseado no
+nome do arquivo de comandos, convertido em arquivo de resposta, tambem de
+acordo com a mascara especificada (por padrao, 'arqret.*'). Este arquivo 
+contera' a resposta ao comando solicitado. O segundo arquivo, tera' o mesmo
+nome do arquivo de resposta, acrescido pelo sufixo de bloqueio, tambem 
+configuravel (por padrao, '.lck'). Este ultimo, e' o indicativo de que o ar-
+quivo de resposta pode ser lido, ou seja, que o spooler concluiu a escrita de
+seu conteudo.
+E' altamente recomendado, que apos a aplicacao integrada coletar o conteudo do
+arquivo de resposta, tanto este, quanto o arquivo de bloqueio sejam removidos,
+evitando assim, percepcoes equivocados de retorno do spooler, em execucoes
+posteriores.
+
+
+LIMITACOES:
+-----------
+
+1) Apesar do proposito da primitiva 'reconf', do lancador de servico 
+   'ecf_spooler', foi identificada limitacao com a biblioteca da Bematech
+   (libbemafiscal.so), especificamente quanto aa presenca das aliquotas
+   tributarias em seu arquivo de configuracoes (da biblioteca), 
+   '/etc/bemafi.xml'. E' necessario que o spooler seja REINICIADO, depois da
+   execucao de 'reconf', pois somente assim, a biblioteca ira reconhecer as
+   aliquotas definidas no arquivo.
+
+2) Se o spooler for interrompido (e reiniciado) apos o final de um cupom 
+   fiscal, e antes da emissao de um CCD (vinculado ao cupom), pode ocorrer
+   erro na emissao do CCD, especialmente se o cupom teve multiplas moedas de
+   TEF. Caso seja apenas uma, provavelmente o funcionamento sera' normal.
+   Em caso de multiplos cartoes, sera' preciso cancelar o cupom fiscal, e
+   refazer a operacao (de venda) toda.
