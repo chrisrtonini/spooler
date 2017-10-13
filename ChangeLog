@@ -33,3 +33,177 @@ Alterado o driver default de BEMATECH para BEMATECH_CV0909.
 	e que manterao os valores da data e hora da ultima reducao Z, respectiva-
 	mente. Estes valores serao resetados, como forma de forcar sua realimenta-
 	cao, na execucao de ecf_bematech::reducao_z(void).
+	
+	3.5.10
+	------
+	Alterado script de inicializacao (SYSV) do servico, de modo a invocar o
+	programa "update_bemafi.pl" cuja funcao e' efetuar o download da tabela de
+	aliquotas tributarias do ECF, e inseri-las no arquivo de configuracoes da
+	biblioteca da Bematech ("/etc/bemafi.xml").
+	Para isso, a interface de ECF foi incrementada, oferecendo o metodo 
+	"get_tab_aliq", responsavel por gravar um arquivo de texto, no diretorio 
+	"/tmp". Este arquivo conterá uma alíquota por linha, de acordo com a sintaxe:
+	99:X:9999 onde:
+		* 99 e' o indice da aliquota na tabela
+		* X e' o tipo, sendo T=ICMS e S=ISS
+		* 9999 e' a aliquota tributaria sem nenhuma formatacao, e com zeros aa
+			esquerda
+	IMPORTANTE: o retorno de aliquotas de ISS nao e' suportado no momento.
+	Tambem foi necessario incrementar a interface de comandos do spooler, para
+	contemplar a chamada "get_tab_aliquotas"
+
+3.6.x
+=====
+
+A partir dessa versao, o mecanismo utilizado para realizar a varredura do 
+diretorio de trabalho, buscando por arquivos de comando, deixa de ser uma
+leitura temporizada da pasta para atuar de acordo com o seguinte algoritmo:
+
+	1 Efetua busca por arquivos de comando, no diretorio especificado, 
+		atraves do uso de syscall "opendir" + "readdir", ate' que nenhum arquivo
+		de comando seja encontrado
+	2 Estabelece um monitor de eventos de escrita (MOVED_TO e WRITE_CLOSE),
+		atraves do mecanismo do kernel (inotify). O laco de leitura baseado
+		no tratamento de eventos e' infinito, finalizando apenas com SIGTERM.
+
+3.7.x
+=====
+
+A versao 3.7.0 oferece o recurso de passar, pelo arquivo de configuracoes
+(/etc/spooler/spooler.cfg) uma configuracao especifica para o driver de ECF.
+A nova tag e' "ecf_settings" e seu conteudo e' uma string, e o tratamento do 
+conteudo nao e' tratado pelo spooler em si, mas sim, deixado para cada driver.
+Para o driver "BEMATECH_CV0909" o conteudo e' o path para um arquivo de texto,
+contendo outras chaves+valores de configuracao. Nesta versao, apenas uma chave
+e' processada, a saber "cnf_saida", que corresponde a uma string, contendo as
+descricoes dos totalizadores nao fiscais (CNF), conforme descritos no ECF, 
+delimitidos por "#", ou seja:
+	cnf_saida=#DESPESAS#PAGAMENTOS#...#
+
+	3.7.1
+	-----
+	Corrigida a busca por totalizadores nao fiscais de saida, para obedecer o
+	tamanho da descricao, determinado pelo valor de "m_size_totcnf", na rotina
+	de registro nao fiscal ("reg_nao_fiscal").
+	Alterado metodo abre_credito_debito(), do driver ecf_bematech_cv0909, para
+	utilizar a funcao Bematech_FI_AbreComprovanteNaoFiscalVinculadoCV0909(),
+	da biblioteca do fabricante, como forma de resolver o problema que impedia
+	a emissao de dois CCDs vinculados a um mesmo Cupom (Fiscal ou Nao Fiscal).
+
+	3.7.[2-4]
+	---------
+	Introduzido mecanismo contador de sequencia de meios de pagamento utilizados
+	em Cupons Fiscais e Comprovantes Nao Fiscais Nao Vinculados (Recibos).
+	Essa informacao (o numero de sequencia) passa a ser necessario para a correta
+	invocacao da funcao Bematech_FI_AbreComprovanteNaoFiscalVinculadoCV0909().
+	
+	3.7.5
+	-----
+	Corrigidos diversos bugs de modo a estabilizar o funcionamento da aplicacao.
+
+3.8.x
+=====
+
+Considerando o funcionamento estavel da versao anterior, ajustes de propriedades
+dos drivers, e incorporacao de novos elementos passam a ser realizadas.
+
+	3.8.1
+	-----
+	A partir deste release, a ativacao do filtro de pouco papel passa a ser 
+	opcional. Seu acionamento esta associado aa tag 'sensor_pouco_papel',
+	encontrada no arquivo de configuracoes especificas do driver.
+	Durante os testes, observou-se que (pelo menos) o simulador Bematech, nao
+	respeita essa configuracao, continuando portanto, a reportar "Pouco papel".
+	Por este motivo, foi implementada outra tag ('ignorar_pouco_papel'), de
+	utilizacao do spooler, definida conjuntamente com a primeira, de modo a
+	forcar a aplicacao a resetar essa condicao de erro.
+
+	O driver para ECFs do convenio 09/09, teve seu comando de subtotalizacao de
+	cupons fiscais, alterado para a utilizacao de uma sequencia de tres comandos:
+		- Bematech_FI_SubTotalizaCupomMFD()
+		- Bematech_FI_AcrescimoDescontoSubtotalCV0909(...)
+		- Bematech_FI_TotalizaCupomMFD()
+	Esta implementacao veio corrigir bug, identificado pelo suporte, onde se
+	constatou nao ser possivel definir acrescimo em subtotal de cupons fiscais.
+	Acrescentado o utilitario "rc4_crypt" ao build do spooler. Pois, sem sua
+	presenca, algumas rotinas do Solidus falham.
+
+4.0.x
+=====
+
+A partir deste ponto, as configuracoes para 'autotools' nao sao mais geradas
+pelo uso do 'anjuta', mas sim, definidas manualmente de modo a explorar as
+possibilidades de linkedicao seletiva (necessario ao suporte a MFD, para ECFs
+Bematech).
+Alem disso, scripts complementares ao servidor de impressao, foram recodifica-
+dos (em PERL) de modo a cumprir certos requisitos de seguranca, alem de melho-
+rar seu modo de uso, bem como suas capacidades de melhoramentos futuros.
+
+	4.0.2
+	-----
+	Solucionado problema encontrado na versao 4.0.1, quando do download de MFD
+	por data.
+	Criada opcao para o script 'configure' ('--without-manual') para suprimir
+	a geracao de manuais durante a instalacao.
+	Detectada a capacidade do sistema de converter documentacao .pod para o
+	formato .man. Quando nao for possivel, a geracao dos manuais sera desati-
+	vada automaticamente, independente da opcao de configuracao.
+	Acertado 'makefile' da documentacao, de modo a incluir arquivos .pod (BUG
+	identificado no release 4.0.1).
+
+	4.0.3
+	-----
+	Definido o controle de flag para supressao de pagamentos, em comprovantes
+	nao fiscais, na classe Bematech base (ecf_bematech), incluindo em sua
+	interface protegida, metodos para set e reset do controle, que, por sua
+	vez, sera definido na selecao da moeda (como foi implementado original-
+	mente) porem, passa a ser resetado no encerramento do comprovante. Essa
+	alteracao tem como objetido permitir que mais de uma moeda seja utilizada
+	em comprovantes de saida (de acordo com BUG identificado na semana de 
+	10/01/2017).
+
+	4.0.4
+	-----
+	Corrigido bug identificado pelo suporte, causado pela inicializacao inver-
+	tida, na construcao do objeto da classe ecfbematechcv0909. A situacao cau-
+	sadora de erro, sendo bem particular, dependia de que nenhum recebimento
+	nao fiscal fosse efetuado, e nenhuma tabela de controle interno do spooler
+	tivesse sido carregada, e entao, ao tentar registrar um recebimento nao
+	fiscal, com moeda vinculada, o problema se mostrava na tentativa de aber-
+	tura do CCD. Na pratica, nenhum pagamento seria registrado nesse caso, e o
+	erro passaria despercebido, a menos que se fosse conferido o recibo, cons-
+	tatando-se entao, a falta do registro de pagamento (moeda).
+	Problema identificado e corrigido em 23/01/2017).
+
+	4.0.5
+	-----
+	Corrigido bug que produzia numeros de cupons fiscais (COO, e possivelmente
+	tambem CCDs) com valores negativos. O fato de a biblioteca (libbemafiscal)
+	ser de 32 bits, estava produzindo cupons com codigos de ordem de operacao
+	com valores superiores ao limite superior do tipo 'int', como negativos
+	(como resultado da conversao direta de um string de char para um valor
+	inteiro sinalizado de 32 bits).
+	Problema identificado em 03/02/2017. Release liberado em 15/02/2017.
+
+	4.1.0
+	-----
+	Redefinida forma de instalacao, constando do pacote 'spooler' apenas o
+	aplicativo gateway. Todos os utilitarios foram empacotadoss como
+	'spooler-tools'. Este pacote tambem passa a realizar de modo automatizado,
+	diversas tarefas de configuracao para o gateway, bem como a inicializacao
+	do gateway como servico. Portanto, sua instalacao deixa de ser opcional e 
+	torna-se obrigatoria.
+	Corrigido bug que impedia a emissao de leitura da memoria fiscal por
+	impressao no ECF (apenas funcionava a leitura dos dados pela serial).
+	Incluida instrucao nas regras de instalacao (make install) para criar o
+	diretorio '/sgi/ecf/ecf0', necessario por motivos de compatiblidade.
+	Incluida tag de configuracao especifica para permitir aos drivers, a cria-
+	cao de arquivos de registro durante a operacao, em diretorios arbitrarios
+	(diferentes de "/tmp/").
+	Corrigido bug que obrigava ser informado o arquivos de configuracoes es-
+	pecificas para instanciacao do objeto de ECF. Especificamente para os
+	equipamentos Bematech MP-4200, este argumento de configuracao continua
+	sendo obrigatorio.
+	Geracao de mensagem de log da rotina "str_iequals", para auxilio na depu-
+	racao de bug percebido (e nao identificado) na abertura de CCDs.
+	Release liberado em 05/10/2017.
