@@ -23,11 +23,12 @@
 
 #include <exception>
 #include <string>
+#include <time.h>
 
 #include "excp.h"
 #include "aliquota.h"
 
-#define SPOOLER_FAKE	"SPOOLER_FAKE"
+#define SPOOLER_FAKE			"SPOOLER_FAKE"
 
 #define ECF_UNEXPECTED_MSG		"Impossivel identificar erro."
 #define ECF_DLL_CALL_ERR		"Erro ao acionar biblioteca do fabricante."
@@ -40,10 +41,12 @@
 #define ECF_REL_GER_MISSING		"Relatorio Gerencial nao encontrado."
 #define ECF_REL_GER_PRESENT		"Relatorio Gerencial ja cadastrado."
 #define ECF_TIPO_DOWNLOAD_ERR   "Tipo de download da MFD nao suportado."
+#define ECF_FMT_CONV_ERR		"Formato de conversao de MFD nao suportado."
 #define ECF_TIPO_CORTE_ERR		"Modo de corte nao reconhecido."
 #define ECF_FPGTO_MISSING		"Forma de pagamento nao encontrada."
 #define ECF_FPGTO_PRESENT		"Forma de pagamento ja cadastrada."
 #define ECF_SUBTOTAL_MODE_ERR   "Modo invalido ao subtotalizar."
+#define ECF_CCD_UNAVAILABLE		"Nao ha moedas vinculadas para emitir CCD."
 
 #define ECF_SAIDA_ECF			0
 #define ECF_SAIDA_SERIAL		1
@@ -61,6 +64,9 @@
 #define ECF_DOWNLOAD_MFD_TOTAL	0
 #define ECF_DOWNLOAD_MFD_DATA   1
 #define ECF_DOWNLOAD_MFD_COO	2
+
+#define ECF_CONV_MFD_TEXTO		0	// 'espelho' da MFD
+#define ECF_CONV_MFD_COTEPE		1	// Formato para homologacao PAF-ECF
 
 
 /**
@@ -98,6 +104,8 @@ class ecf
 		static const char   ACR_DSC_PERCENTUAL;
 		static const char   ACR_DSC_VALOR;
 		static const char   NO_OP;
+
+							ecf(const std::string& cfg_file = "");
 		
 		virtual short		get_nr_loja(void) = 0;
 		virtual std::string get_nr_serie(void) = 0;
@@ -105,7 +113,7 @@ class ecf
 		virtual std::string get_modelo(void) = 0;
 		virtual short		get_nr_usuario(void) = 0;
 		virtual std::string get_nr_serie_cript(void) = 0;
-		virtual short	   get_nr_caixa(void) = 0;
+		virtual short		get_nr_caixa(void) = 0;
 		virtual std::string get_firmware(void) = 0;
 		virtual std::string get_data_atual(void) = 0;
 		virtual std::string get_hora_atual(void) = 0;
@@ -113,8 +121,10 @@ class ecf
 		virtual std::string get_data_ult_red(void) = 0;
 		virtual std::string get_hora_ult_red(void) = 0;
 		virtual ecf_status  get_status_ecf(void) = 0;
-		virtual short		get_nr_cupom(void) = 0;
+		virtual unsigned 
+				int			get_nr_cupom(void) = 0;
 		virtual short		get_id_forma_pgto(const std::string& fpgto) = 0;
+		virtual bool		get_vinc_forma_pgto(const short idx) = 0;
 		virtual short		get_totalizador_cnf(const std::string& tot) = 0;
 		virtual short		get_prox_totalizador(void) = 0;
 		virtual void		set_forma_pgto(const std::string& forma,
@@ -137,7 +147,7 @@ class ecf
 		virtual void		pagamento(const std::string& fpgto, float valor) = 0;
 		virtual void		fecha_cupom(const std::string& msg) = 0;
 		virtual void		abre_nfiscal_vinc(const std::string& fpgto,
-												float valor, int coo) = 0;
+												float valor, unsigned int coo) = 0;
 		virtual void		msg_nfiscal_vinc(const std::string& msg) = 0;
 		virtual void		fecha_nfiscal_vinc(void) = 0;
 		virtual void		abre_nfiscal_nvinc(const std::string& nome_tot,
@@ -190,6 +200,12 @@ class ecf
 		virtual std::string	download_mfd(int tipo, const std::string& ini,
 											const std::string& fim,
 											int usr = 1) = 0;
+		virtual void		converte_mfd(int tipo, const std::string& ini,
+											const std::string& fim,
+											const std::string& origem,
+											const std::string& destino,
+											int fmt = ECF_CONV_MFD_TEXTO,
+											int usr = 1) = 0;
 		virtual bool		pouco_papel(void) = 0;
 		virtual long		contador_cupom_fiscal(void) = 0;
 		virtual long		contador_tot_naofiscal(void) = 0;
@@ -200,7 +216,7 @@ class ecf
 										const std::string& nome,
 										const std::string& endr) = 0;
 		virtual void		abre_credito_debito(const std::string& fpgto, 
-												float valor, int coo,
+												float valor, unsigned int coo,
 												const std::string& doc,
 												const std::string& nome,
 												const std::string& endr) = 0;
@@ -221,11 +237,24 @@ class ecf
 		virtual void		fecha_recibo(const std::string& msg) = 0;
 		virtual void		fecha_ccd(void) = 0;
 		virtual void		cancela_nfiscal_pos(const std::string& moeda,
-												float valor, int coo, int ccd,
+												float valor, unsigned int coo,
+												unsigned int ccd,
 												const std::string& doc,
 												const std::string& nome,
 												const std::string& endr) = 0;
 		virtual bool		nao_fiscal_aberto(void) = 0;
+		virtual std::string	get_tab_aliq(void) = 0;
+		virtual std::string	get_tab_relger(void) = 0;
+		virtual std::string	get_tab_totcnf(void) = 0;
+		virtual std::string	get_tab_fpgto(void) = 0;
+		
+		virtual std::string	today_rec_path(std::string dir, 
+											std::string prefix,
+											int seq,
+											std::string ext);
+		
+	protected:
+		std::string			m_cfg_file;
 };
 
 

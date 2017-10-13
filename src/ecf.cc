@@ -73,3 +73,50 @@ const char  ecf::DESCONTO_VALOR			= 'd';
 const char  ecf::ACR_DSC_PERCENTUAL		= 'X';
 const char  ecf::ACR_DSC_VALOR			= 'x';
 const char  ecf::NO_OP					= '\0';
+
+
+/**
+ \brief Construtor
+ \details
+ \param cfg_file Parâmetro opcional (NULL por padrão), informando o path de
+ arquivo contendo configurações específicas para o driver.
+ */
+ecf::ecf(const std::string& cfg_file) : m_cfg_file(cfg_file)
+{
+	xdebug_log(std::string("ecf(") + dquote(cfg_file.c_str()) + std::string(")"));
+}
+
+
+/**
+ \brief Produz nomes para arquivos de registro, contendo data e hora.
+ \param dir Diretório base para o arquivo.
+ \param prefix Identificação para o conteúdo do arquivo.
+ \param seq Valor sequencial, para o caso de ser preciso mais do que um na 
+ mesma data. Caso seja '0' (ZERO), não será adicionado ao nome.
+ \param ext Extensão (sufixo) para o arquivo).
+ \returns Path absoluto para o arquivo de registro.
+ */
+ std::string ecf::today_rec_path(std::string dir, std::string prefix,
+									int seq, std::string ext)
+{
+	time_t now = time(0);
+	struct tm data = *localtime(&now);
+	char buff[80];
+	std::string fpath = dir;
+
+	fpath += prefix;
+	fpath += "_";
+	
+	strftime(buff, sizeof(buff), "%Y-%m-%d.%X", &data);
+	fpath += buff;
+
+	if (seq > 0)	{
+		fpath += "_";
+		fpath += into_string(seq);
+	}
+	
+	fpath += ".";
+	fpath += ext;
+
+	return fpath;
+}

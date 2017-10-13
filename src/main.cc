@@ -215,11 +215,6 @@ int main(int argc, char* argv[])
 	ecf_broker*		broker;
 	ecf*			ifiscal;
 		
-/*	// Output da "assinatura" da aplicação.
-	std::cout << APP_NAME << " - " << APP_DESCR << " (";
-	std::cout << APP_VERSION << "." << APP_RELEASE << APP_STATUS << ")";
-	std::cout << std::endl << std::endl;
-*/
 	// Output da "assinatura" da aplicação.
 	std::cerr << APP_NAME << " - " << APP_DESCR << " (";
 	std::cerr << APP_VERSION << "." << APP_RELEASE << APP_STATUS << ")";
@@ -232,7 +227,7 @@ int main(int argc, char* argv[])
 		cfg_file = SPOOLER_CFG_DEFAULT;
 	}
 	else
-		cfg_file = argv[2];
+		cfg_file = argv[1];
 
 	// Carga de configurações...
 	try {
@@ -256,6 +251,13 @@ int main(int argc, char* argv[])
 			    atoi(app_cfg.get_value_by_key(APP_LOG_LEVEL).c_str())),
 		    static_cast<bool>(
 			    atoi(app_cfg.get_value_by_key(APP_LOG_VERBOSE).c_str())));
+		
+		info_log(std::string(APP_NAME) + std::string(" - ") +
+		         std::string(APP_DESCR) + std::string(" (") +
+		         std::string(APP_VERSION) + std::string(".") +
+		         std::string(APP_RELEASE) + std::string(APP_STATUS) +
+		         std::string(")"));
+		
 		info_log("main() --- Inicio ---");
 	}
 	catch (std::ofstream::failure& err) {
@@ -277,7 +279,8 @@ int main(int argc, char* argv[])
 		hw = app_cfg.get_value_by_key(APP_ECF_DRIVER);
 		info_log("main() Instanciar driver de ECF");
 		debug_log(std::string("main() Driver = ") + hw);
-		ifiscal = factory::create_ecf(factory::vendor_id(hw));
+		ifiscal = factory::create_ecf(factory::vendor_id(hw), 
+		                              app_cfg.get_value_by_key(APP_ECF_SPECIFIC));
 	}
 	catch (spooler_exp& err)	{
 		close_up(log_stream, err.what());

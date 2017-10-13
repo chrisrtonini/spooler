@@ -200,20 +200,13 @@ static inline bool str_iequals(const std::string str1, const std::string str2)
 	if ((len1 != len2) && ((len1 == 0) || (len2 == 0)))
 		return false;
 
-	if (len1 > len2)
-		cpy1 = cpy1.substr(0, len2);
-
-	if (len2 > len1)
-		cpy2 = cpy2.substr(0, len1);
-
-//	xdebug_log(std::string("str_iequals(\"") + cpy1 + 
-//	    std::string("\", \"") + cpy2 + std::string("\")"));
 	bool test = (cpy1 == cpy2);
-//	xdebug_log(std::string("str_iequals(...) = ") + 
-//	    std::string((test ? "TRUE" : "FALSE")));
-	   
 
-	return (cpy1 == cpy2);
+	xdebug_log(std::string("str_iequals(\"") + cpy1 + 
+	    std::string("\", \"") + cpy2 + std::string("\") = ") +
+	    std::string((test ? "TRUE" : "FALSE")));
+
+	return (test);
 }
 
 

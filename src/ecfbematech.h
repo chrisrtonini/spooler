@@ -33,10 +33,13 @@
 #include <ctype.h>
 #include <string.h>
 
+#include "datapair.h"
 #include "ecf.h"
 #include "bemafi.h"
 #include "utils.h"
 #include "fs.h"
+
+#include "../config.h"
 
 
 #define BEMATECH_OK					 1
@@ -65,6 +68,7 @@
 #define BEMATECH_OUTPUT_PATH		"/tmp/"
 #define BEMATECH_RETURN_FILE		"Retorno.txt"
 #define BEMATECH_OUTFILE_NOT_FOUND  "Nao encontrado arquivo de retorno."
+#define BEMATECH_MFD_NOT_SUPPORTED	"Download da MFD nao suportado."
 
 #define IDX_NOT_FOUND				-1
 #define MIN_IDX_VALID				0
@@ -74,13 +78,18 @@
 #define BEMATECH_TXT_SANGRIA		"Sangria"
 #define BEMATECH_TXT_SUPRIMENTO		"Suprimento"
 
+#define BEMATECH_SENSOR_POUCO_PAPEL		"sensor_pouco_papel"
+#define BEMATECH_IGNORAR_POUCO_PAPEL	"ignorar_pouco_papel"
+#define BEMATECH_REC_FOLDER				"diretorio_registro"
+
 
 class ecf_bematech : public ecf
 {
 	public:
-							ecf_bematech(void);
+							ecf_bematech(const std::string& cfg_file = "");
 							ecf_bematech(short size_fpgto, short size_totcnf,
-							    short size_relger);
+							    short size_relger, 
+							    const std::string& cfg_file = "");
 		
 		void				check(int retcode);
 		bool				eval_status(bematech_status_mfd sts);
@@ -100,8 +109,9 @@ class ecf_bematech : public ecf
 		std::string			get_data_ult_red(void);
 		std::string			get_hora_ult_red(void);
 		ecf_status			get_status_ecf(void);
-		short				get_nr_cupom(void);
+		unsigned int		get_nr_cupom(void);
 		short				get_id_forma_pgto(const std::string& fpgto);
+		bool				get_vinc_forma_pgto(const short idx);
 		short				get_totalizador_cnf(const std::string& tot);
 		short				get_prox_totalizador(void);
 		void				set_forma_pgto(const std::string& forma,
@@ -120,11 +130,11 @@ class ecf_bematech : public ecf
 										float qtde,
 										float valor, 
 										float desc);
-		void				inicia_fechamento(float acresc);
+		virtual void		inicia_fechamento(float acresc);
 		void				pagamento(const std::string& fpgto, float valor);
 		void				fecha_cupom(const std::string& msg);
 		void				abre_nfiscal_vinc(const std::string& fpgto,
-												float valor, int coo);
+												float valor, unsigned int coo);
 		void				msg_nfiscal_vinc(const std::string& msg);
 		void				fecha_nfiscal_vinc(void);
 		void				abre_nfiscal_nvinc(const std::string& nome_tot,
@@ -176,6 +186,12 @@ class ecf_bematech : public ecf
 		bool				is_horario_verao(void);
 		std::string			download_mfd(int tipo, const std::string& ini,
 											const std::string& fim, int usr = 1);
+		void				converte_mfd(int tipo, const std::string& ini,
+											const std::string& fim,
+											const std::string& origem,
+											const std::string& destino,
+											int fmt = ECF_CONV_MFD_TEXTO,
+											int usr = 1);
 		bool				pouco_papel(void);
 		long				contador_cupom_fiscal(void);
 		long				contador_tot_naofiscal(void);
@@ -186,7 +202,7 @@ class ecf_bematech : public ecf
 										const std::string& nome,
 										const std::string& endr);
 		void				abre_credito_debito(const std::string& fpgto, 
-												float valor, int coo,
+												float valor, unsigned int coo,
 												const std::string& doc,
 												const std::string& nome,
 												const std::string& endr);
@@ -202,18 +218,26 @@ class ecf_bematech : public ecf
 											float valor);
 		void				lcto_nao_fiscal(const std::string& moeda,
 											float valor);
-		void				inicia_fechamento_nao_fiscal(unsigned char tipo,
+		virtual void		inicia_fechamento_nao_fiscal(unsigned char tipo,
 															float valor);
 		void				fecha_recibo(const std::string& msg);
 		void				fecha_ccd(void);
 		void				cancela_nfiscal_pos(const std::string& moeda,
-												float valor, int coo, int ccd,
+												float valor, unsigned int coo, 
+												unsigned int ccd,
 												const std::string& doc,
 												const std::string& nome,
 												const std::string& endr);
 		bool				nao_fiscal_aberto(void);
+		std::string			get_tab_aliq(void);
+		std::string			get_tab_relger(void);
+		std::string			get_tab_totcnf(void);
+		std::string			get_tab_fpgto(void);
 
 	protected:
+		void				set_dont_pay(void);
+		void				reset_dont_pay(void);
+		bool				get_dont_pay(void);
 		void				get_data_hora_atual(char* data, char* hora);
 		void				get_data_hora_ult_red(char* data, char* hora);
 		void				get_data_hora_ult_red(void);
@@ -242,8 +266,8 @@ class ecf_bematech : public ecf
 		std::string			m_hr_ult_red;
 		std::string			format_monetary(float valor, const char* fmt);
 
-//	private:
 		std::vector<std::string>				m_fpgto;
+		std::vector<bool>						m_vinc_ccd;
 		std::vector<std::string>				m_tot_cnf;
 		std::map<short, aliq_trib::aliquota>	m_aliqs;
 		std::vector<std::string>				m_relger;
@@ -252,9 +276,18 @@ class ecf_bematech : public ecf
 		short									m_size_relger;
 
 		bool				fake(void);
+		void				set_pgto_seq(short val);
+		short				get_pgto_seq(void);
+		bool				ignorar_pouco_papel(void);
+		datapair			m_specific;
 
 	private:
+		void				load_specific(void);
+		bool				m_dont_pay;
 		bool				m_fake;
+		bool				m_ignorar_pouco_papel;
+		std::string			m_rec_folder;
+		short				m_pgto_seq;
 };
 
 

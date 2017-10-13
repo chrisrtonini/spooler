@@ -377,6 +377,21 @@ void ecf_broker::trade(const request_packet& in, response_packet* out) NO_THROW
 			case cmd::GET_NAOFISC_ABERTO			:
 				get_naofisc_aberto(in, out);
 				break;
+			case cmd::GET_TAB_ALIQ				:
+				get_tab_aliq(in, out);
+				break;
+			case cmd::GET_TAB_RELGER			:
+				get_tab_relger(in, out);
+				break;
+			case cmd::GET_TAB_TOTCNF			:
+				get_tab_totcnf(in, out);
+				break;
+			case cmd::GET_TAB_FPGTO				:
+				get_tab_fpgto(in, out);
+				break;
+			case cmd::CONVERTEMFD					:
+				convertemfd(in, out);
+				break;
 			default									:
 				error_log(
 				    std::string("ecf_broker::trade() Erro ") +
@@ -745,7 +760,7 @@ void ecf_broker::get_nr_cupom(const request_packet& in, response_packet* out)
 	debug_log("ecf_broker::get_nr_cupom()");
 	
 	try {
-		short coo = m_ecf->get_nr_cupom();
+		unsigned int coo = m_ecf->get_nr_cupom();
 		
 		xdebug_log(std::string("ecf_broker::get_nr_cupom() = ") + 
 		    dquote(into_string(coo).c_str()));
@@ -2344,3 +2359,155 @@ void ecf_broker::get_naofisc_aberto(const request_packet& in,
 		throw;
 	}
 }
+
+
+/**
+ \brief Obtém tabela de alíquotas do equipamento
+ */
+void ecf_broker::get_tab_aliq(const request_packet& in,
+	response_packet* out)
+{
+	debug_log("ecf_broker::get_tab_aliq()");
+
+	try {
+		std::string arq = m_ecf->get_tab_aliq();
+		if (!arq.empty())   {
+			out->add_param("dados", arq);
+			xdebug_log(std::string("ecf_brocker::get_tab_aliq() = \"") +
+			           arq + std::string("\""));
+		}
+	}
+	catch (...) {
+		throw;
+	}
+}
+
+
+/**
+ \brief Obtém tabela de relatórios gerenciais do equipamento
+ */
+void ecf_broker::get_tab_relger(const request_packet& in,
+	response_packet* out)
+{
+	debug_log("ecf_broker::get_tab_relger()");
+
+	try {
+		std::string arq = m_ecf->get_tab_relger();
+		if (!arq.empty())
+			out->add_param("dados", arq);
+	}
+	catch (...) {
+		throw;
+	}
+}
+
+
+/**
+ \brief Obtém tabela de totalizadores não sujeitos ao ICMS do equipamento
+ */
+void ecf_broker::get_tab_totcnf(const request_packet& in,
+	response_packet* out)
+{
+	debug_log("ecf_broker::get_tab_totcnf()");
+
+	try {
+		std::string arq = m_ecf->get_tab_totcnf();
+		if (!arq.empty())
+			out->add_param("dados", arq);
+	}
+	catch (...) {
+		throw;
+	}
+}
+
+
+/**
+ \brief Obtém tabela de formas/meios de pagamento do equipamento
+ */
+void ecf_broker::get_tab_fpgto(const request_packet& in,
+	response_packet* out)
+{
+	debug_log("ecf_broker::get_tab_fpgto()");
+
+	try {
+		std::string arq = m_ecf->get_tab_fpgto();
+		if (!arq.empty())
+			out->add_param("dados", arq);
+	}
+	catch (...) {
+		throw;
+	}
+}
+
+
+/**
+ \brief Converte para texto, arquivo binário contendo download da MFD.
+ */
+void ecf_broker::convertemfd(const request_packet& in, response_packet* out)
+{
+	int			tipo;
+	std::string	inicial;
+	std::string	final;
+	std::string	origem;
+	std::string	destino;
+	int			fmt;
+	int			usr;
+
+	debug_log("ecf_broker::convertemfd(...)");
+	try {
+		tipo	= (str_iequals(get_param_value_by_name("tipo", in), "data") ?
+				    ECF_DOWNLOAD_MFD_DATA : ECF_DOWNLOAD_MFD_COO);
+		xdebug_log(std::string("ecf_broker::convertemfd(...) tipo = ") +
+					into_string(tipo));
+				    
+		inicial = get_param_value_by_name("inicial", in);
+		xdebug_log(std::string("ecf_broker::convertemfd(...) inicial = ") +
+					dquote(inicial.c_str()));
+					
+		final	= get_param_value_by_name("final", in);
+		xdebug_log(std::string("ecf_broker::convertemfd(...) final = ") +
+					dquote(final.c_str()));
+					
+		origem	= get_param_value_by_name("origem", in);
+		xdebug_log(std::string("ecf_broker::convertemfd(...) origem = ") +
+					dquote(origem.c_str()));
+					
+		destino	= get_param_value_by_name("destino", in);
+		xdebug_log(std::string("ecf_broker::convertemfd(...) destino = ") +
+					dquote(destino.c_str()));
+		
+		// A menos que seja requisitada explicitamente a geracao no
+		// formato do ATO COTEPE, assume por padrao, geracao do espelho
+		// da MFD.
+		try {
+			fmt = (str_iequals(get_param_value_by_name("formato", in), 
+					"mfd") ? ECF_CONV_MFD_TEXTO : ECF_CONV_MFD_COTEPE);
+			xdebug_log(std::string("ecf_broker::convertemfd(...) formato = ") +
+						std::string(
+							(fmt == ECF_CONV_MFD_TEXTO ? "mfd" : "cotepe")));
+		}
+		catch (pkt_param_exp& e) {
+			fmt = ECF_CONV_MFD_TEXTO;
+			xdebug_log(
+				"ecf_broker::convertemfd(...) formato = \"mfd\" (default)");
+		}
+		
+		// Se nenhum índice de usuário do ECF for informado, 
+		// assume-se que seja um único cadastrado.
+		try {
+			usr = atoi(get_param_value_by_name("usuario", in).c_str());
+			xdebug_log(std::string("ecf_broker::convertemfd(...) usuario = ") +
+						into_string(usr));
+		}
+		catch (pkt_param_exp& e) {
+			usr = 1;
+			xdebug_log("ecf_broker::convertemfd(...) usuario = 1 (default)");
+		}
+		
+		m_ecf->converte_mfd(tipo, inicial, final, origem, destino, fmt, usr);
+	}
+	catch (...) {
+		throw;
+	}
+}
+

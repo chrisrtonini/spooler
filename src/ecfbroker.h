@@ -169,6 +169,15 @@ class ecf_broker
 										response_packet* out);
 		void	get_naofisc_aberto(const request_packet& in, 
 										response_packet* out);
+		void	get_tab_aliq(const request_packet& in,
+										response_packet* out);
+		void	get_tab_relger(const request_packet& in,
+										response_packet* out);
+		void	get_tab_totcnf(const request_packet& in,
+										response_packet* out);
+		void	get_tab_fpgto(const request_packet& in,
+										response_packet* out);
+		void	convertemfd(const request_packet& in, response_packet* out);
 		
 	private:
 		ecf*			 m_ecf;

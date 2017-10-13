@@ -140,11 +140,15 @@ void txt_reader::read_packet(request_packet* pkt)
 	bool				has_stop  = false;
 	size_t				pos;
 	pkt_param			text;
+	int					n_line = 0;
 
 	do  {
 		m_in->exceptions(std::ios::failbit | std::ios::badbit);
 		try {
 			std::getline(*m_in, line);
+
+			debug_log(std::string("arqcmd #")+into_string(++n_line)+
+			           dquote(line.c_str()));
 		}
 		catch (const std::ios::failure& err) {
 			if (!m_in->eof())	{
@@ -162,9 +166,16 @@ void txt_reader::read_packet(request_packet* pkt)
 			// ----------------------------------------------------------------
 			case in_idle		:
 				if (pkt_phase != in_start)  {
-					m_in->exceptions(excp);
-					msg = MSG_EXPECTED_START + std::string(" != ") + line;
-					throw rqt_reader_exp(msg);
+					if (!str_iequals(line, "cortar_papel_ecf")) {
+						m_in->exceptions(excp);
+						msg = MSG_EXPECTED_START + std::string(" != ") + line;
+					
+						if (str_iequals(line, "cortar_papel_ecf"))   {
+							throw cortar_papel_exp(msg);
+						}
+					
+						throw rqt_reader_exp(msg);
+					}
 				}
 				else
 					prc_phase = in_request;

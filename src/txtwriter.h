@@ -26,6 +26,7 @@
 #include "rspwriter.hpp"
 #include "txttags.h"
 #include "vrstags.h"
+#include "utils.h"
 
 
 /**

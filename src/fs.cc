@@ -268,6 +268,174 @@ std::string fs::err_closedir(int code) NO_THROW
 
 
 /**
+ \brief Obtém descrição de erro gerado por inotify_init.
+ \param code Código de erro (errno).
+ \returns String contendo mensagem de erro.
+ */
+std::string fs::err_inotify_init(int code) NO_THROW
+{
+	std::string msg;
+
+	switch (code)
+	{
+		case EINVAL			:
+			msg = "Valor invalido especificado para 'flags'.";
+			break;
+		case EMFILE			:
+			msg = "Numero maximo de instancias de inotify alcancado.";
+			break;
+		case ENFILE			:
+			msg = "Numero maximo de descritores alcancado.";
+			break;
+		case ENOMEM			:
+			msg = "Memoria do kernel insuficiente.";
+			break;
+		default				:
+			msg = "Erro desconhecido (inotify_init()).";
+	}
+
+	return msg;
+}
+
+
+/**
+ \brief Obtém descrição de erro gerado por inotify_add_watch.
+ \param code Código de erro (errno).
+ \returns String contendo mensagem de erro.
+ */
+std::string fs::err_inotify_add_watch(int code) NO_THROW
+{
+	std::string msg;
+
+	switch (code)
+	{
+		case EACCES			:
+			msg = "Acesso de leitura nao permitido.";
+			break;
+		case EBADF			:
+			msg = "Descritor invalido.";
+			break;
+		case EFAULT			:
+			msg = "Pathname fora do espaco de enderecamento do processo.";
+			break;
+		case EINVAL			:
+			msg = "Mascara de eventos invalida ou descritor nao 'inotify'.";
+			break;
+		case ENOENT			:
+			msg = "Caminho invalido.";
+			break;
+		case ENOMEM			:
+			msg = "Memoria do kernel insuficiente.";
+			break;
+		case ENOSPC			:
+			msg = "Limite de uso de recursos atingido.";
+			break;
+		default				:
+			msg = "Erro desconhecido (inotify_add_watch(...)).";
+	}
+
+	return msg;
+}
+
+
+/**
+ \brief Obtém descrição de erro gerado por inotify_rm_watch.
+ \param code Código de erro (errno).
+ \returns String contendo mensagem de erro.
+ */
+std::string fs::err_inotify_rm_watch(int code) NO_THROW
+{
+	std::string msg;
+
+	switch (code)
+	{
+		case EBADF			:
+			msg = "Descritor invalido.";
+			break;
+		case EINVAL			:
+			msg = "Descritor de aquivo ou de watch invalido.";
+			break;
+		default				:
+			msg = "Erro desconhecido (inotify_rm_watch(...)).";
+	}
+
+	return msg;
+}
+
+
+/**
+ \brief Obtém descrição de erro gerado por select.
+ \param code Código de erro (errno).
+ \returns String contendo mensagem de erro.
+ */
+std::string fs::err_select(int code) NO_THROW
+{
+	std::string msg;
+
+	switch (code)
+	{
+		case EBADF			:
+			msg = "Pelo menos um descritor de fs_set e' invalido.";
+			break;
+		case EINTR			:
+			msg = "Capturada ocorrencia de 'signal'.";
+			break;
+		case EINVAL			:
+			msg = "Numero negativo de FDs ou timeout invalido.";
+			break;
+		case ENOMEM			:
+			msg = "Impossivel alocar memoria para tabelas internas.";
+			break;
+		default				:
+			msg = "Erro desconhecido (select(...)).";
+	}
+
+	return msg;
+}
+
+
+/**
+ \brief Obtém descrição de erro gerado por read.
+ \param code Código de erro (errno).
+ \returns String contendo mensagem de erro.
+ */
+std::string fs::err_read(int code) NO_THROW
+{
+	std::string msg;
+
+	switch (code)
+	{
+		case EAGAIN			:
+//		case EWOULDBLOCK	:
+			msg = "Descritor em uso. Tente ler novamente.";
+			break;
+		case EBADF			:
+			msg = "Descritor invalido.";
+			break;
+		case EFAULT			:
+			msg = "Buffer fora do espaco de enderamento.";
+			break;
+		case EINTR			:
+			msg = "Leitura interrompida por 'signal'.";
+			break;
+		case EINVAL			:
+			msg = "Argumentos de leitura invalidos.";
+			break;
+		case EIO			:
+			msg = "Erro de I/O.";
+			break;
+		case EISDIR			:
+			msg = "Descritor associado a um diretorio.";
+			break;
+		default				:
+			msg = "Erro desconhecido (read(...)).";
+	}
+
+	return msg;
+}
+
+
+/**
  \brief Obtém mensagem descritiva de erro.
  \details A mensagem resultante, corresponde ao código de erro passado como 
  argumento. O conjunto de mensagens corresponde exclusivamente aos erros

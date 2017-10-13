@@ -5,8 +5,8 @@
 
 #define	APP_NAME		"spooler"
 #define	APP_DESCR		"Gateway para ECFs"
-#define	APP_VERSION		"3"
-#define	APP_RELEASE		"5-9"
+#define	APP_VERSION		"4"
+#define	APP_RELEASE		"1-0"
 #define	APP_STATUS		"b"
 
 #endif

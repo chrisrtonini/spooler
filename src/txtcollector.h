@@ -27,9 +27,11 @@
 #include "pktresponse.h"
 #include "ecfbroker.h"
 #include "session.h"
+#include "filequeue.h"
 
 
 #define APP_ECF_DRIVER		"ecf"
+#define APP_ECF_SPECIFIC	"ecf_settings"
 
 #define APP_LOG_FILE		"log_file"
 #define APP_LOG_LEVEL		"log_level"
@@ -72,6 +74,8 @@ class txt_collector: public collector
 		std::string			m_cmdfile;
 		session				m_session;
 		bool				m_failure;
+		bool				m_mute;
+		file_queue*			m_dir;
 		void				(*m_writer)(const std::string& path,
 										const response_packet* pkt);
 };

@@ -46,7 +46,8 @@ typedef enum	{
 class factory
 {
 	public:
-		static ecf*					create_ecf(ECF_VENDOR vendor);
+		static ecf*					create_ecf(ECF_VENDOR vendor, 
+							                      const std::string& cfg_file);
 		static const std::string	vendor_name(ECF_VENDOR vendor);
 		static const ECF_VENDOR		vendor_id(const std::string& vendor);
 };

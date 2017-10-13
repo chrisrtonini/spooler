@@ -64,6 +64,11 @@ class fs
 								throw(fs_exp);
 		static std::string	err_opendir(int code) NO_THROW;
 		static std::string	err_closedir(int code) NO_THROW;
+		static std::string  err_inotify_init(int code) NO_THROW;
+		static std::string  err_inotify_add_watch(int code) NO_THROW;
+		static std::string  err_inotify_rm_watch(int code) NO_THROW;
+		static std::string  err_select(int code) NO_THROW;
+		static std::string  err_read(int code) NO_THROW;
 		static std::string  random_name(const std::string& base) NO_THROW;
 		static void			copy_file(const std::string& orig, 
 										const std::string& dest);

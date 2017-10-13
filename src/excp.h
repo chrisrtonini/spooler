@@ -156,6 +156,21 @@ class rqt_reader_exp : public spooler_exp
 
 
 /**
+ \class cortar_papel_exp
+ \brief Execção lançada para comando de corte de papel mal formatado.
+ \details Apenas para fins de compatibilidade, pois o Solidus PDV, produz, em
+ determinadas circunstancias, pacote de comando sem cabeçalho ou rodapé. 
+ Evidenciado apenas em casos de sinalização para acionamento de guilhotna, dentro
+ de texto não fiscal (relatório gerencial ou comprovante vinculado).
+ */
+class cortar_papel_exp : public rqt_reader_exp
+{
+	public:
+					cortar_papel_exp(const std::string& msg) : rqt_reader_exp(msg) {}
+};
+
+
+/**
  \class aliquota_exp
  \brief Exceção lançado quando do tratamento de alíquotas tributárias.
  */
@@ -163,6 +178,17 @@ class aliquota_exp : public spooler_exp
 {
 	public:
 					aliquota_exp(const std::string& msg) : spooler_exp(msg) {}
+};
+
+
+/**
+ \class ctrl_exp
+ \brief Exceção lançado no controle de execução, sinalizando parada do serviço.
+ */
+class ctrl_exp : public spooler_exp
+{
+	public:
+					ctrl_exp(const std::string& msg) : spooler_exp(msg) {}
 };
 
 

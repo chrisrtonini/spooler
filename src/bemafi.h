@@ -313,6 +313,7 @@ union ST2	{
 		unsigned short erro_cmos					: 1;
 		unsigned short mem_fiscal_lotada			: 1;
 		unsigned short tipo_param_invalido			: 1;
+
 	} bits;
 };
 
@@ -553,6 +554,26 @@ static const char* const bematech_st3_msgs[] = {
 #define BEMATECH_ARRAY_HOLE_MSG		"Codigo ST3 indefinido";
 #define	BEMATECH_HIGHER_BOUND		218
 #define BEMATECH_HIGHER_BOUND_MSG	"Valor muito grande para ST3"
+
+// Mensagens de ST1
+#define BEMATECH_ST1_FIM_PAPEL		"Fim de papel"						// bit 7
+#define BEMATECH_ST1_POUCO_PAPEL	"Pouco papel"						// bit 6
+#define BEMATECH_ST1_ERRO_RTC		"Erro no relogio"					// bit 5
+#define BEMATECH_ST1_ERRO_IMPR		"Impressora em erro"				// bit 4
+#define BEMATECH_ST1_CMD_NAO_ESC	"Comando nao iniciado com ESC"		// bit 3
+#define BEMATECH_ST1_CMD_NAO_EXIST  "Comando inexistente"				// bit 2
+#define BEMATECH_ST1_CUPOM_ABERTO   "Cupom aberto"						// bit 1
+#define BEMATECH_ST1_NUM_PAR_INV	"Num. de parametro(s) invalido(s)"  // bit 0
+
+// Mensagens de ST2
+#define BEMATECH_ST2_TP_PARAM_INV   "Tipo de param. de comando invalido"// bit 7
+#define BEMATECH_ST2_MEM_LOTADA		"Memoria fiscal lotada"				// bit 6
+#define BEMATECH_ST2_ERRO_CMOS		"Erro na memoria RAM"				// bit 5
+#define BEMATECH_ST2_ALIQ_NAO_PRG	"Aliquota nao programada"			// bit 4
+#define BEMATECH_ST2_CP_ALQ_LOTADA  "Capacidade de aliquotas lotada"	// bit 3
+#define BEMATECH_ST2_CANC_NAO_PERM  "Cancelamento nao permitido"		// bit 2
+#define BEMATECH_ST2_PROP_NAO_PRG   "CNPJ/IE propriet. nao programado"  // bit 1
+#define BEMATECH_ST2_CMD_NAO_EXEC   "Comando nao executado"				// bit 0
 
 
 // Funções de inicialização...

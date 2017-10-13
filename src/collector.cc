@@ -42,13 +42,13 @@ int collector::run(bool bckground)
 
 	// Sinalização, em memória compartilhada, do flag de
 	// continuação da execução do laço de coleta.
-	debug_log("collector::run() Definindo estado inicial do laco");
+	//debug_log("collector::run() Definindo estado inicial do laco");
 	loopctrl::to_true(*m_ctx);
 
 	// Caso solicitada execução em background, deve ser
 	// criado o processo filho.
 	if (bckground)  {
-		debug_log("collector::run() Rodar em background");
+		//debug_log("collector::run() Rodar em background");
 		my_pid = fork();
 		if (my_pid == -1)   {
 			std::string msg;
@@ -70,15 +70,15 @@ int collector::run(bool bckground)
 
 	// Executar o laço de coleta...
 	if (my_pid == 0)	{
-		debug_log("collector::run() Execucao do processo filho");
+		//debug_log("collector::run() Execucao do processo filho");
 		while (m_running)   {
-			debug_log("collector::run() Continuar execucao");
+			//debug_log("collector::run() Continuar execucao");
 			try {
-				debug_log("collector::run() Invocar 'accept()'");
+				//debug_log("collector::run() Invocar 'accept()'");
 				code = accept();
-				debug_log("collector::run() Avaliar retorno 'accept()'");
+				//debug_log("collector::run() Avaliar retorno 'accept()'");
 				if (code != COLLECTOR_RUNNING)  {
-					debug_log("collector::run() Sinalizado fim do laco");
+					//debug_log("collector::run() Sinalizado fim do laco");
 					loopctrl::to_false(*m_ctx);
 					if (code == COLLECTOR_ABORT)	{
 						error_log(
@@ -97,7 +97,7 @@ int collector::run(bool bckground)
 	}
 
 	// Retornar o código da última chamada de "accept"
-	debug_log(std::string("collector::run(): ") + into_string(code));
+	//debug_log(std::string("collector::run(): ") + into_string(code));
 	return code;
 }
 

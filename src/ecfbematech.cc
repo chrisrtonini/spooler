@@ -28,14 +28,30 @@
  - habilita o sensor de pouco papel
  
  */
-ecf_bematech::ecf_bematech(void) :
-	m_retmsg(""), m_stsmsg(""), m_marca(""), m_modelo(""), m_tipo("")
+ecf_bematech::ecf_bematech(const std::string& cfg_file) :
+	m_retmsg(""), m_stsmsg(""), m_marca(""), m_modelo(""), m_tipo(""),
+	ecf(cfg_file)
 {
 	debug_log("ecf_bematech::ecf_bematech()");
 
 	info_log("Inicializacao do driver ecf_bematech");
+
+	m_size_fpgto = BEMATECH_SIZE_FPGTO;
+	m_size_totcnf = BEMATECH_SIZE_TOTCNF;
+	m_size_relger = BEMATECH_SIZE_RELGER;
+
+	m_fpgto.clear();
+	m_vinc_ccd.clear();
+	m_tot_cnf.clear();
+	m_relger.clear();
+	m_aliqs.clear();
+
+	m_dont_pay = false;
 	
 	m_fake = false;
+	m_ignorar_pouco_papel = true;
+	
+	m_pgto_seq = IDX_NOT_FOUND;
 
 	char* flag = getenv(SPOOLER_FAKE);
 	if (flag)   {
@@ -44,25 +60,34 @@ ecf_bematech::ecf_bematech(void) :
 
 	if (m_fake)
 		info_log("Modo FAKE habilitado.");
+
+	if (ignorar_pouco_papel())
+		info_log("Status de pouco papel sera ignorado durante a inicializacao.");
 	
 	try {
 		debug_log("Habilitacao de retorno estendido");
 		check(Bematech_FI_HabilitaDesabilitaRetornoEstendidoMFD(
 		    std::string("1").c_str()));
 		
-		debug_log("Ativacao do sensor de pouco papel");
-		check(Bematech_FI_AtivaDesativaSensorPoucoPapelMFD(1));
+		try {
+			load_specific();
+		}
+		catch (...) {
+			throw;
+		}
 		
-		m_fpgto.clear();
-		m_size_fpgto = BEMATECH_SIZE_FPGTO;
+		if (atoi(m_specific.get_value_by_key(
+				BEMATECH_SENSOR_POUCO_PAPEL).c_str()) > 0) {
+			debug_log("Ativacao do sensor de pouco papel");
+			check(Bematech_FI_AtivaDesativaSensorPoucoPapelMFD(1));
+		}
+		else	{
+			debug_log("Desativacao do sensor de pouco papel");
+			check(Bematech_FI_AtivaDesativaSensorPoucoPapelMFD(0));
+		}
 
-		m_tot_cnf.clear();
-		m_size_totcnf = BEMATECH_SIZE_TOTCNF;
-
-		m_relger.clear();
-		m_size_relger = BEMATECH_SIZE_RELGER;
-
-		m_aliqs.clear();
+		if (ignorar_pouco_papel())
+			info_log("Sensor de pouco papel sera ignorado.");
 	}
 	catch (...) {
 		// Já está sendo gerado log. Vamos evitar
@@ -86,13 +111,28 @@ ecf_bematech::ecf_bematech(void) :
  
  */
 ecf_bematech::ecf_bematech(short size_fpgto, short size_totcnf, 
-    short size_relger)
+    short size_relger, const std::string& cfg_file) : ecf(cfg_file)
 {
 	debug_log("ecf_bematech::ecf_bematech(...)");
 
 	info_log("Inicializacao do driver ecf_bematech");
 	
+	m_size_fpgto = size_fpgto;
+	m_size_totcnf = size_totcnf;
+	m_size_relger = size_relger;
+
+	m_fpgto.clear();
+	m_vinc_ccd.clear();
+	m_tot_cnf.clear();
+	m_relger.clear();
+	m_aliqs.clear();
+	
+	m_dont_pay = false;
+	
 	m_fake = false;
+	m_ignorar_pouco_papel = true;
+	
+	m_pgto_seq = IDX_NOT_FOUND;
 
 	char* flag = getenv(SPOOLER_FAKE);
 	if (flag)   {
@@ -102,24 +142,33 @@ ecf_bematech::ecf_bematech(short size_fpgto, short size_totcnf,
 	if (m_fake)
 		info_log("Modo FAKE habilitado.");
 	
+	if (ignorar_pouco_papel())
+		info_log("Status de pouco papel sera ignorado durante a inicializacao.");
+	
 	try {
 		debug_log("Habilitacao de retorno estendido");
 		check(Bematech_FI_HabilitaDesabilitaRetornoEstendidoMFD(
 		    std::string("1").c_str()));
+
+		try {
+			load_specific();
+		}
+		catch (...) {
+			throw;
+		}
 		
-		debug_log("Ativacao do sensor de pouco papel");
-		check(Bematech_FI_AtivaDesativaSensorPoucoPapelMFD(1));
+		if (atoi(m_specific.get_value_by_key(
+				BEMATECH_SENSOR_POUCO_PAPEL).c_str()) > 0) {
+			debug_log("Ativacao do sensor de pouco papel");
+			check(Bematech_FI_AtivaDesativaSensorPoucoPapelMFD(1));
+		}
+		else	{
+			debug_log("Desativacao do sensor de pouco papel");
+			check(Bematech_FI_AtivaDesativaSensorPoucoPapelMFD(0));
+		}
 		
-		m_fpgto.clear();
-		m_size_fpgto = size_fpgto;
-
-		m_tot_cnf.clear();
-		m_size_totcnf = size_totcnf;
-
-		m_relger.clear();
-		m_size_relger = size_relger;
-
-		m_aliqs.clear();
+		if (ignorar_pouco_papel())
+			info_log("Sensor de pouco papel sera ignorado.");
 	}
 	catch (...) {
 		// Já está sendo gerado log. Vamos evitar
@@ -139,8 +188,14 @@ ecf_bematech::ecf_bematech(short size_fpgto, short size_totcnf,
  */
 void ecf_bematech::check(int retcode)
 {
+	/*
+	 * Comentei o log de depuração abaixo, pois estava poluindo DEMAIS os
+	 * registros de execução.
+	 *
 	debug_log(std::string("ecf_bematech::check(") + into_string(retcode) +
 	    std::string(")"));
+	 *
+	 */
 	
 	int	 buffer_ack,
 			buffer_st1,
@@ -154,7 +209,11 @@ void ecf_bematech::check(int retcode)
 	// Caso a DLL tenha processado o comando, é necessário colher
 	// o retorno do equipamento (ECF).
 	if (retcode == BEMATECH_OK)  {
-		debug_log("ecf_bematech::check() Obter retorno do ECF");
+		//
+		// Log DEMAIS. Muitas mensagens repetidas no registro de execução.
+		//
+		//debug_log("ecf_bematech::check() Obter retorno do ECF");
+		//
 		ret = Bematech_FI_RetornoImpressoraMFD(&buffer_ack, &buffer_st1,
 		    &buffer_st2, &buffer_st3);
 
@@ -178,7 +237,7 @@ void ecf_bematech::check(int retcode)
 			// Seta indicador de estado
 			set_status(m_status);
 
-			// Solicitada avaliação de ST3...
+			// Solicitada avaliação de ST1, ST2 e ST3...
 			if (!eval_status(m_status)) {
 				throw ecf_exp(m_stsmsg);
 			}
@@ -207,10 +266,19 @@ void ecf_bematech::check(int retcode)
  */
 bool ecf_bematech::eval_status(bematech_status_mfd sts)
 {
+	/*
+	 * Comentei o log de depuração abaixo, pois estava poluindo DEMAIS
+	 * os registros de execução.
+	 *
 	debug_log("ecf_bematech::eval_status(...)");
-	
+	 *
+	 */
+
+	bool	flg1 = (static_cast<int>(sts.st1.byte) == 0);
+	bool	flg2 = (static_cast<int>(sts.st2.byte) == 0);
 	bool	flag = (static_cast<int>(sts.st3) == 0);
 
+	// Avaliação preferencial do erro estendido (ST3)
 	if (!flag)   {
 		if (sts.st3 < BEMATECH_LOWER_BOUND) {
 			m_stsmsg = BEMATECH_LOWER_BOUND_MSG;
@@ -225,8 +293,78 @@ bool ecf_bematech::eval_status(bematech_status_mfd sts)
 			m_stsmsg = bematech_st3_msgs[static_cast<int>(sts.st3)];
 		}
 	}
+	else	{
+		// Avaliação de ST1
+		if (!flg1)  {
+			if (sts.st1.bits.num_params_invalido)   {				// bit 0
+				m_stsmsg = BEMATECH_ST1_NUM_PAR_INV;
+			}
+			else if (sts.st1.bits.cupom_fiscal_aberto)  {			// bit 1
+				m_stsmsg = BEMATECH_ST1_CUPOM_ABERTO;
+			}
+			else if (sts.st1.bits.comando_inexistente)  {			// bit 2
+				m_stsmsg = BEMATECH_ST1_CMD_NAO_EXIST;
+			}
+			else if (sts.st1.bits.inicio_dif_esc)   {				// bit 3
+				m_stsmsg = BEMATECH_ST1_CMD_NAO_ESC;
+			}
+			else if (sts.st1.bits.erro_impressora)  {				// bit 4
+				m_stsmsg = BEMATECH_ST1_ERRO_IMPR;
+			}
+			else if (sts.st1.bits.erro_rtc) {						// bit 5
+				m_stsmsg = BEMATECH_ST1_ERRO_RTC;
+			}
+			else if (sts.st1.bits.pouco_papel)  {					// bit 6
+				if (!ignorar_pouco_papel()) {
+					m_stsmsg = BEMATECH_ST1_POUCO_PAPEL;
+				}
+				else	{
+					sts.st1.bits.pouco_papel = 0;
+					flg1 = (static_cast<int>(sts.st1.byte) == 0);
+					warn_log(std::string("ecf_bematech::eval_status():") +
+					         std::string("Ignorado indicador de pouco papel"));
+				}
+			}
+			else if (sts.st1.bits.fim_de_papel) {					// bit 7
+				m_stsmsg = BEMATECH_ST1_FIM_PAPEL;
+			}
+			if (!flg1)
+				error_log(std::string("ecf_bematech::eval_status() ST1: ") +
+				          dquote(m_stsmsg.c_str()));
+		}
 
-	return flag;
+		// Avaliação de ST2
+		if (!flg2)  {
+			if (sts.st2.bits.comando_nao_executado) {				// bit 0
+				m_stsmsg = BEMATECH_ST2_CMD_NAO_EXEC;
+			}
+			else if (sts.st2.bits.proprietario_nao_programado)  {   // bit 1
+				m_stsmsg = BEMATECH_ST2_PROP_NAO_PRG;
+			}
+			else if (sts.st2.bits.canc_nao_permitido)   {			// bit 2
+				m_stsmsg = BEMATECH_ST2_PROP_NAO_PRG;
+			}
+			else if (sts.st2.bits.capacidade_aliq_esgotada) {		// bit 3
+				m_stsmsg = BEMATECH_ST2_CP_ALQ_LOTADA;
+			}
+			else if (sts.st2.bits.aliq_nao_programada)  {			// bit 4
+				m_stsmsg = BEMATECH_ST2_ALIQ_NAO_PRG;
+			}
+			else if (sts.st2.bits.erro_cmos)	{					// bit 5
+				m_stsmsg = BEMATECH_ST2_ERRO_CMOS;
+			}
+			else if (sts.st2.bits.mem_fiscal_lotada)	{			// bit 6
+				m_stsmsg = BEMATECH_ST2_MEM_LOTADA;
+			}
+			else if (sts.st2.bits.tipo_param_invalido)  {			// bit 7
+				m_stsmsg = BEMATECH_ST2_TP_PARAM_INV;
+			}
+			error_log(std::string("ecf_bematech::eval_status() ST2: ") +
+			          dquote(m_stsmsg.c_str()));
+		}
+	}
+
+	return (flg1 && flg2 && flag);
 }
 
 
@@ -238,8 +376,14 @@ bool ecf_bematech::eval_status(bematech_status_mfd sts)
  */
 bool ecf_bematech::eval_retcode(int retcode)
 {
+	/*
+	 * Comentei o log de depuração abaixo, pois estava poluindo DEMAIS os
+	 * registros de execução.
+	 *
 	debug_log(std::string("ecf_bematech::eval_retcode(") + 
 	    into_string(retcode) + std::string(")"));
+	 *
+	 */
 	
 	bool		status = false;
 	char		code[6];
@@ -647,8 +791,8 @@ std::string ecf_bematech::get_data_mvto(void)
 
 
 /**
- * \brief Obtém data e hora da última Redução Z.
- * \note Alimenta propriedades da instância para uso futuro.
+ \brief Obtém data e hora da última Redução Z.
+ \note Alimenta propriedades da instância para uso futuro.
  */
 void ecf_bematech::get_data_hora_ult_red(void)
 {
@@ -828,7 +972,13 @@ ecf_status ecf_bematech::get_status_ecf(void)
  */
 void ecf_bematech::set_status(const bematech_status_mfd sts)
 {
+	/*
+	 * Comentei o log de depuração abaixo, pois estava poluindo DEMAIS
+	 * os registros de execução.
+	 *
 	debug_log("ecf_bematech::set_status()");
+	 *
+	 */
 	
 	// Reset de indicadores...
 	m_sts.sem_papel = false;
@@ -844,8 +994,14 @@ void ecf_bematech::set_status(const bematech_status_mfd sts)
 	}
 
 	if (sts.st1.bits.pouco_papel)   {
-		xdebug_log("ecf_bematech::set_status() = \"Pouco papel\"");
-		m_sts.pouco_papel = true;
+		if (ignorar_pouco_papel())  {
+			xdebug_log("ecf_bematech::set_status() = \"Pouco papel\" (ignorado)");
+			m_sts.pouco_papel = false;
+		}
+		else	{
+			xdebug_log("ecf_bematech::set_status() = \"Pouco papel\"");
+			m_sts.pouco_papel = true;
+		}
 	}
 
 	if (sts.st1.bits.cupom_fiscal_aberto)   {
@@ -876,7 +1032,7 @@ void ecf_bematech::set_status(const bematech_status_mfd sts)
  \brief Obtém o número de cupom correspondente ao último COO.
  \returns Valor numérico.
  */
-short ecf_bematech::get_nr_cupom(void)
+unsigned int ecf_bematech::get_nr_cupom(void)
 {
 	debug_log("ecf_bematech::get_nr_cupom()");
 	
@@ -893,7 +1049,8 @@ short ecf_bematech::get_nr_cupom(void)
 	xdebug_log(std::string("ecf_bematech::get_nr_cupom() = ") + 
 	    dquote(num_cupom));
 
-	return atoi(num_cupom);
+	//return atoi(num_cupom);
+	return static_cast<unsigned int>(strtoul(num_cupom, NULL, 10));
 }
 
 
@@ -973,6 +1130,7 @@ short ecf_bematech::get_id_forma_pgto(const std::string& fpgto)
 	short					i = 0;
 	char					descr[BEMATECH_SIZE_FPGTO+1];
 	std::string				fmt_dsc;
+	bool					vinc_ccd = false;
 	bematech_reg_fpgto_mfd* reg;
 
 	// Caso a forma de pagamento não tenha sido encontrada
@@ -984,6 +1142,7 @@ short ecf_bematech::get_id_forma_pgto(const std::string& fpgto)
 			check(Bematech_FI_VerificaFormasPagamentoMFD(buffer_fpgto));
 
 			m_fpgto.clear();
+			m_vinc_ccd.clear();
 
 			for (i = 0; i < total; i++)	{
 
@@ -1001,14 +1160,18 @@ short ecf_bematech::get_id_forma_pgto(const std::string& fpgto)
 				memset(descr, 0, sizeof(descr));
 				strncpy(descr, reg->descricao, m_size_fpgto);
 
+				vinc_ccd = (reg->flag_uso_vinc == '1' ? true : false);
+
 				fmt_dsc = descr;
 				trim(fmt_dsc);
 
 				if (!fmt_dsc.empty())   {
 					xdebug_log(std::string("Adicionando Forma de Pgto # ") +
 					    into_string(i) + std::string(": ") +
-					    dquote(fmt_dsc.c_str()));
+					    dquote(fmt_dsc.c_str()) + 
+					    std::string(vinc_ccd ? "(V)" : ""));
 					add_element(&m_fpgto, fmt_dsc);
+					m_vinc_ccd.push_back(vinc_ccd);
 
 					if (str_iequals(fpgto.substr(0, m_size_fpgto), fmt_dsc))
 						idx = i;
@@ -1025,6 +1188,46 @@ short ecf_bematech::get_id_forma_pgto(const std::string& fpgto)
 			    into_string(idx + 1)));
 
 	return (idx < MIN_IDX_VALID ? idx : idx + 1);
+}
+
+
+/**
+ \brief Obtém o flag de vinculação de CCD de uma forma de pagamento.
+ \param idx Índice da forma de pagamento.
+ \returns Valor lógico, indicando se a forma de pagamento, indicada pelo índice
+ passado como argumento, permite ou não a emissão de CCD vinculado.
+ */
+bool ecf_bematech::get_vinc_forma_pgto(const short idx)
+{
+	debug_log(std::string("ecf_bematech::get_vinc_forma_pgto(") +
+	    dquote(into_string(idx).c_str()) + std::string(")"));
+
+	std::vector<bool>::iterator			it;
+	short								index = IDX_NOT_FOUND;
+	bool								ret = false;
+	try {
+		// Força a carga da tabela de formas de pagamento, caso ainda tenha
+		// sido devidamente carregada para a memória
+		//get_id_forma_pgto("");
+
+		if (!m_vinc_ccd.empty())	{
+			index = 0;
+			for (it = m_vinc_ccd.begin(); it != m_vinc_ccd.end(); it++) {
+				index++;
+				if (idx == index)   {
+					ret = (*it);
+				}
+			}
+		}
+	}
+	catch (...) {
+		throw;
+	}
+
+	xdebug_log(std::string("ecf_bematech::get_vinc_forma_pgto(...) = ") +
+	           std::string((ret ? "Verdadeiro" : "Falso")));
+
+	return (ret);
 }
 
 
@@ -1056,16 +1259,19 @@ short ecf_bematech::get_totalizador_cnf(const std::string& tot)
 			memset(buffer_cnf, 0, sizeof(buffer_cnf));
 			check(Bematech_FI_VerificaTotalizadoresNaoFiscaisMFD(buffer_cnf));
 
+			xdebug_log(std::string("{") + dquote(buffer_cnf) + std::string("}"));
+
 			m_tot_cnf.clear();
 
 			for (i = 0; i < total; i++) {
 				memset(buff_um, 0, sizeof(buff_um));
 				strncpy(buff_um, static_cast<char*>(buffer_cnf+(i*rec_size)), 
 					m_size_totcnf);
-			
+				
 				if (i < BEMATECH_TOTAL_TOTCNF) {
 					one_cnf = buff_um;
 					trim(one_cnf);
+
 					if (str_iequals(one_cnf, BEMATECH_TXT_SANGRIA) || 
 						    str_iequals(one_cnf, BEMATECH_TXT_SUPRIMENTO) || 
 						    one_cnf.empty())   {
@@ -1190,6 +1396,7 @@ void ecf_bematech::set_forma_pgto(const std::string& forma,
 			    debug_log("FAKE >> Bematech_FI_ProgramaFormaPagamentoMFD");
 			
 			m_fpgto.clear();
+			m_vinc_ccd.clear();
 		}
 		else
 			throw ecf_exp(ECF_FPGTO_PRESENT);
@@ -1681,7 +1888,7 @@ void ecf_bematech::inicia_fechamento(float acresc)
 	tmp_acr = format_valor(acresc, "%11.2f");
 
 	try {
-		xdebug_log(std::string("Bematech_FI_IniciaFechamentoMFD(") +
+		xdebug_log(std::string("Bematech_FI_IniciaFechamentoCupomMFD(") +
 		    dquote(flag) + std::string(", ") + dquote(tipo) + 
 		    std::string(", ") + dquote(tmp_acr.c_str()) + std::string(", ") +
 		    dquote(tmp_dsc.c_str()) + std::string(")"));
@@ -1691,6 +1898,8 @@ void ecf_bematech::inicia_fechamento(float acresc)
 			    tmp_acr.c_str(), tmp_dsc.c_str()));
 		else
 			debug_log("FAKE >> Bematech_FI_IniciaFechamentoCupomMFD");
+
+		set_pgto_seq(IDX_NOT_FOUND);
 	}
 	catch (...) {
 		throw;
@@ -1796,7 +2005,7 @@ void ecf_bematech::fecha_cupom(const std::string& msg)
  \param coo COO do cupom fiscal.
  */
 void ecf_bematech::abre_nfiscal_vinc(const std::string& fpgto, float valor,
-    int coo)
+    unsigned int coo)
 {
 	debug_log(std::string("ecf_bematech::abre_nfiscal_vinc(") +
 	    dquote(fpgto.c_str()) + std::string(", ") + 
@@ -2080,12 +2289,45 @@ std::string ecf_bematech::dados_ult_reducao(void)
 	std::string					dados;
 	char						buff_aliq[5];
 	char						buff_valiq[15];
+	std::string					out_dat = today_rec_path(m_rec_folder,
+									std::string("dados_reducao"), 0, 
+									std::string("dat"));
+	std::string					out_txt = today_rec_path(m_rec_folder,
+									std::string("dados_reducao"), 0, 
+									std::string("txt"));
 
 	try {
 		xdebug_log("Bematech_FI_DadosUltimaReducaoMFD(...)");
 		
 		check(Bematech_FI_DadosUltimaReducaoMFD(
 		    reinterpret_cast<char*>(&buffer)));
+		
+		// === I N I C I O   D O   L O G   R E T O R N O   D O   E C F ===
+		// Registrar neste ponto, para avaliacao futura, os dados da forma
+		// como foram obtidos do equipamento. O arquivo gerado podera ser
+		// utilizado futuramente para depuracao, caso se verifique o erro de
+		// atribuicao de valores aos totalizadores.
+		try {
+			std::ofstream dat;
+			dat.open(out_dat.c_str());
+			dat.write(const_cast<char*>(reinterpret_cast<char*>(&buffer)),
+						sizeof(bematech_dados_reducaoz_mfd));
+			dat.close();
+		}
+		catch (std::ofstream::failure& err) {
+			error_log(std::string("ecf_bematech::dados_ult_reducao(): ") +
+				std::string("Falha ao criar arquivo de registro [") +
+				out_dat + std::string("]"));
+		}
+		catch (std::bad_alloc& err) {
+			error_log(std::string("ecf_bematech::dados_ult_reducao(): ") +
+				std::string("Falha ao alocar memoria para stream de registro."));
+		}
+		catch (std::exception& err) {
+			error_log(std::string("ecf_bematech::dados_ult_reducao(): ") +
+				std::string("Impossivel gerar registro de dados (raw)."));
+		}
+		// === F I M   D O   L O G   R E T O R N O   D O   E C F ===
 
 		// Processar todo o buffer, substituindo todas vírgulas (',') por 
 		// sinalizadores de fim de string ('\0'). Assim, todas as substrings
@@ -2236,6 +2478,33 @@ std::string ecf_bematech::dados_ult_reducao(void)
 		throw;
 	}
 
+	// === I N I C I O   D O   L O G   D E   D A D O S   F M T ===
+	// Registrar neste ponto, para avaliacao futura, os dados da forma
+	// como foram obtidos do equipamento. O arquivo gerado podera ser
+	// utilizado futuramente para depuracao, caso se verifique o erro de
+	// atribuicao de valores aos totalizadores.
+	try {
+		std::ofstream txt;
+		txt.open(out_txt.c_str());
+		txt << dados.c_str();
+		txt.flush();
+		txt.close();
+	}
+	catch (std::ofstream::failure& err) {
+		error_log(std::string("ecf_bematech::dados_ult_reducao(): ") +
+			std::string("Falha ao criar arquivo de dados [") +
+			out_txt + std::string("]"));
+	}
+	catch (std::bad_alloc& err) {
+		error_log(std::string("ecf_bematech::dados_ult_reducao(): ") +
+			std::string("Falha ao alocar memoria para stream de dados."));
+	}
+	catch (std::exception& err) {
+		error_log(std::string("ecf_bematech::dados_ult_reducao(): ") +
+			std::string("Impossivel gerar registro de dados (fmt)."));
+	}
+	// === F I M   D O   L O G   D E   D A D O S   F M T ===
+		
 	return dados.c_str();
 }
 
@@ -2331,7 +2600,7 @@ std::string ecf_bematech::memoria_fiscal(int tipo, const std::string& inicio,
 			std::string dt_ini = format_date(inicio);
 			std::string dt_fim = format_date(fim);
 			
-			if (saida = ECF_SAIDA_SERIAL) {
+			if (saida == ECF_SAIDA_SERIAL) {
 				xdebug_log(
 				    std::string(
 					    "Bematech_FI_LeituraMemoriaFiscalSerialDataMFD(") +
@@ -2557,11 +2826,12 @@ short ecf_bematech::get_id_rel_gerencial(const std::string& titulo)
 	debug_log(std::string("ecf_bematech::get_id_rel_gerencial(") +
 	    dquote(titulo.c_str()) + std::string(")"));
 	
-	char					buffer_relger[660];
+	char					buffer_relger[660+1]; // acrescentado NULL
 	short					idx = idx_element(titulo.substr(0, m_size_relger), 
 										&m_relger);
 	short					total = 660 / sizeof(bematech_rel_ger_mfd);
 	short					i = 0;
+	short					start_offset = 21;	  // primeira ","
 	char					descr[BEMATECH_SIZE_RELGER + 1];
 	std::string				fmt_dsc;
 
@@ -2573,14 +2843,34 @@ short ecf_bematech::get_id_rel_gerencial(const std::string& titulo)
 	if (idx == IDX_NOT_FOUND)  {
 		try {
 			xdebug_log("Bematech_FI_VerificaRelatorioGerencialMFD(...)");
-			
+
+			memset(buffer_relger, 0, sizeof(buffer_relger));
 			check(Bematech_FI_VerificaRelatorioGerencialMFD(buffer_relger));
+
+			xdebug_log(std::string("{")+dquote(buffer_relger)+std::string("}"));
 
 			m_relger.clear();
 
-			for (i = 0; i < total; i++) {
+			// Foi identificado um problema com a codificação do equipamento.
+			// O primeiro relatório gerencial, por vezes retorna "Relatório Geral"
+			// (com o "ó" corretamente codificado) e em outros casos,
+			// "Relat363rio Geral". Esta "363" aparentemente se torna "", o que
+			// desloca toda a leitura. Portanto, inserimos o primeiro elemento
+			// fixo na tabela (NÃO É UTILIZADO), e buscamos a ",", que indica
+			// o fim do primeiro registro. Assim, ajustamos o início da próxima
+			// leitura.
+			xdebug_log(std::string("Adicionando Rel. Gerencial (fixo) # 0: ") +
+			    dquote("Relatorio Geral"));
+			add_element(&m_relger, std::string("Relatório Geral"));
+
+			if (buffer_relger[start_offset] != ',') {
+				start_offset++;
+			}
+			
+			for (i = 0; i < (total-1); i++) {
 				reg = reinterpret_cast<bematech_rel_ger_mfd*>
-					(buffer_relger+(i*sizeof(bematech_rel_ger_mfd)));
+					(buffer_relger+start_offset+
+					 (i*sizeof(bematech_rel_ger_mfd))+1);
 
 				memset(descr, 0, sizeof(descr));
 				strncpy(descr, reg->descricao, m_size_relger);
@@ -2590,12 +2880,12 @@ short ecf_bematech::get_id_rel_gerencial(const std::string& titulo)
 
 				if (!fmt_dsc.empty())   {
 					xdebug_log(std::string("Adicionando Rel. Gerencial # ") +
-					    into_string(i) + std::string(": ") +
+					    into_string(i+1) + std::string(": ") +
 					    dquote(fmt_dsc.c_str()));
 					add_element(&m_relger, fmt_dsc);
 
 					if (str_iequals(titulo.substr(0, m_size_relger), fmt_dsc))
-						idx = i;
+						idx = i+1;
 				}
 			}
 		}
@@ -3059,6 +3349,83 @@ std::string ecf_bematech::download_mfd(int tipo, const std::string& ini,
 
 
 /**
+ \brief Efetua conversao para texto, do download da MFD
+ \param tipo 0 - total, 1 - data, 2 - COO
+ \param ini Parâmetro inicial, conforme o tipo.
+ \param fim Parâmetro final, conforme o tipo.
+ \param origem Arquivo binário, contendo o download da MFD.
+ \param destino Arquivo de texto a ser gerado após a conversão.
+ \param fmt Formato do texto gerado, pode ser espelho da MFD ou ATO COTEPE.
+ \param usr Obrigatório quando tipo for 1 (COO).
+ */
+void ecf_bematech::converte_mfd(int tipo, const std::string& ini, 
+    const std::string& fim, const std::string& origem, 
+    const std::string& destino, int fmt, int usr)
+{
+	bool	mfd2_support = false;
+	bool	mfd3_support = false;
+
+#ifdef BEMAMFD2_SUPPORT
+	mfd2_support = true;
+#endif
+
+#ifdef BEMAMFD3_SUPPORT
+	mfd3_support = true;
+#endif
+
+	debug_log(std::string("ecf_bematech::converte_mfd(") + 
+	    into_string(tipo) + std::string(", ") + dquote(ini.c_str()) + 
+	    std::string(", ") + dquote(fim.c_str()) + std::string(", ") + 
+	    dquote(origem.c_str()) + std::string(", ") + dquote(destino.c_str()) +
+	    std::string(", ") + into_string(fmt) + std::string(", ") +
+	    into_string(usr) + std::string(")"));
+	
+	if (!(mfd2_support || mfd3_support)) {
+		throw ecf_exp(BEMATECH_MFD_NOT_SUPPORTED);
+	}
+	    
+	try {
+		if ((tipo != ECF_DOWNLOAD_MFD_TOTAL) && 
+				(tipo != ECF_DOWNLOAD_MFD_DATA) &&
+				(tipo != ECF_DOWNLOAD_MFD_COO)) {
+			throw ecf_exp(ECF_TIPO_DOWNLOAD_ERR);
+		}
+		
+		if ((fmt != ECF_CONV_MFD_TEXTO) &&
+				(fmt != ECF_CONV_MFD_COTEPE)) {
+			throw ecf_exp(ECF_FMT_CONV_ERR);
+		}
+
+		std::string ctipo = format_valor(static_cast<float>(tipo), "%1.0f");
+		std::string cfmt  = format_valor(static_cast<float>(fmt),  "%1.0f");
+		std::string cusr  = format_valor(static_cast<float>(usr),  "%1.0f");
+
+		xdebug_log(std::string("Bematech_FI_FormatoDadosMFD(") + 
+		    dquote(origem.c_str()) + std::string(", ") +
+		    dquote(destino.c_str()) + std::string(", ") +
+		    dquote(cfmt.c_str()) + std::string(", ") +
+		    dquote(ctipo.c_str()) + std::string(", ") +
+		    dquote(ini.c_str()) + std::string(", ") +
+		    dquote(fim.c_str()) + std::string(", ") +
+		    dquote(cusr.c_str()) + std::string(")"));
+		
+		if  (!eval_retcode(Bematech_FI_FormatoDadosMFD(origem.c_str(),
+				destino.c_str(), cfmt.c_str(), ctipo.c_str(), ini.c_str(),
+				fim.c_str(), cusr.c_str())))   {
+			throw ecf_exp(m_retmsg);
+		}
+
+		if (!fs::found(destino))   {
+			throw ecf_exp(BEMATECH_OUTFILE_NOT_FOUND);
+		}
+	}
+	catch (...) {
+		throw;
+	}
+}
+
+
+/**
  \brief Retorna o estado do sensor de pouco papel.
  \details Reporta o estado durante o último comando executado.
  \returns Valor lógico.
@@ -3230,7 +3597,7 @@ void ecf_bematech::abre_recibo(const std::string& doc, const std::string& nome,
 	    dquote(doc.c_str()) + std::string(", ") +
 	    dquote(nome.c_str()) + std::string(", ") +
 	    dquote(endr.c_str()) + std::string(")"));
-	    
+
 	try {
 		xdebug_log(
 		    std::string("Bematech_FI_AbreRecebimentoNaoFiscalMFD(") +
@@ -3262,7 +3629,7 @@ void ecf_bematech::abre_recibo(const std::string& doc, const std::string& nome,
  \param endr Endereço do cliente.
  */
 void ecf_bematech::abre_credito_debito(const std::string& fpgto, float valor,
-    int coo, const std::string& doc, const std::string& nome,
+    unsigned int coo, const std::string& doc, const std::string& nome,
     const std::string& endr)
 {
 	debug_log(std::string("ecf_bematech::abre_credito_debito(") +
@@ -3575,6 +3942,9 @@ void ecf_bematech::inicia_fechamento_nao_fiscal(unsigned char tipo,
 					));
 			else
 				debug_log("FAKE >> Bematech_FI_IniciaFechamentoRecebimentoNaoFiscalMFD");
+
+			set_pgto_seq(IDX_NOT_FOUND);
+			
 /*			check(Bematech_FI_IniciaFechamentoRecebimentoNaoFiscalMFD(
 			    static_cast<char*>(&ad), static_cast<char*>(&tp),
 			    acr.c_str(), dsc.c_str()));*/
@@ -3598,7 +3968,9 @@ void ecf_bematech::fecha_recibo(const std::string& msg)
 	try {
 		xdebug_log(std::string("Bematech_FI_FechaRecebimentoNaoFiscalMFD(") +
 		    dquote(msg.c_str()) + std::string(")"));
-
+		
+		reset_dont_pay();
+		
 		if (!fake())
 			check(Bematech_FI_FechaRecebimentoNaoFiscalMFD(msg.c_str()));
 		else
@@ -3619,7 +3991,9 @@ void ecf_bematech::fecha_ccd(void)
 	
 	try {
 		xdebug_log("Bematech_FI_FechaComprovanteNaoFiscalVinculado()");
-
+		
+		reset_dont_pay();
+		
 		if (!fake())
 			check(Bematech_FI_FechaComprovanteNaoFiscalVinculado());
 		else
@@ -3642,8 +4016,8 @@ void ecf_bematech::fecha_ccd(void)
  \param endr Endereço do cliente...
  */
 void ecf_bematech::cancela_nfiscal_pos(const std::string& moeda, float valor, 
-    int coo, int ccd, const std::string& doc, const std::string& nome,
-    const std::string& endr)
+    unsigned int coo, unsigned int ccd, const std::string& doc, 
+    const std::string& nome, const std::string& endr)
 {
 	debug_log(std::string("ecf_bematech::cancela_nfiscal_pos(") +
 	    dquote(moeda.c_str()) + std::string(", ") + into_string(valor) +
@@ -3713,10 +4087,235 @@ bool ecf_bematech::nao_fiscal_aberto(void)
 
 
 /**
+ \brief Gera arquivo de texto contendo a tabela de alíquotas tributárias
+ do equipamento.
+ \returns Path do arquivo gerado.
+ */
+std::string ecf_bematech::get_tab_aliq(void)
+{
+	std::string			arq;
+	std::ofstream		out;
+	std::map<short, aliq_trib::aliquota>::iterator 
+						i;
+	short				idx = 0;
+	aliq_trib::aliquota	aliq("T:00:8888");
+	
+	try {
+		// Carga da tabela de alíquotas...
+		get_idx_aliquota(aliq);
+
+		// Definição do nome do arquivo a ser gerado
+		arq = std::string(BEMATECH_OUTPUT_PATH) + 
+				fs::random_name("bema_aliq_");
+		
+		out.open(arq.c_str());
+
+		for (i = m_aliqs.begin(); i != m_aliqs.end(); i++)  {
+			std::string ln_tmp = "";
+			std::string fmt_idx = format_monetary(
+							static_cast<float>(++idx), "%!=0#2.0i");
+			std::string fmt_pct = format_monetary(
+							i->second.get_percentual(), "%!=0#2.2i");
+			ln_tmp = fmt_idx + std::string(":") +
+						into_string(i->second.get_tipo()) +
+						std::string(":") +
+						fmt_pct;
+			
+			std::cerr << ln_tmp << std::endl;
+			
+			out << ln_tmp << std::endl;
+		}
+		
+		out.close();
+	}
+	catch (...) {
+		throw;
+	}
+	
+	return arq.c_str();
+}
+
+
+/**
+ \brief Gera arquivo de texto contendo a tabela de relatórios gerenciais
+ do equipamento.
+ \returns Path do arquivo gerado. */
+std::string ecf_bematech::get_tab_relger(void)
+{
+	std::string	arq = "";
+	
+	return arq.c_str();
+}
+
+
+/**
+ \brief Gera arquivo de texto contendo a tabela de totalizadores não
+ sujeitos ao ICMS.
+ \returns Path do arquivo gerado. */
+std::string ecf_bematech::get_tab_totcnf(void)
+{
+	std::string arq = "";
+	
+	return arq.c_str();
+}
+
+
+/**
+ \brief Gera arquivo de texto contendo a tabela de formas de pagamento
+ do equipamento.
+ \returns Path do arquivo gerado. */
+std::string ecf_bematech::get_tab_fpgto(void)
+{
+	std::string arq = "";
+	
+	return arq.c_str();
+}
+
+
+/**
  \brief Obtém flag de simulação de execução.
  \returns Valor lógico.
  */
 bool ecf_bematech::fake(void)
 {
 	return m_fake;
+}
+
+
+/**
+ \brief Define o número de sequência do meio de pagamento
+ */
+void ecf_bematech::set_pgto_seq(short val)
+{
+	debug_log(std::string("ecf_bematech::set_pgto_seq(") +
+	          into_string(val) + std::string(")"));
+	m_pgto_seq = val;
+}
+
+
+/**
+ \brief Obtém o número de sequencia de pagamento
+ \returns Valor inteiro.
+ */
+short ecf_bematech::get_pgto_seq(void)
+{
+	debug_log(std::string("ecf_bematech::get_pgto_seq() = ") +
+	          into_string(m_pgto_seq));
+	return m_pgto_seq;
+}
+
+
+/**
+ \brief Carrega arquivo de configurações específicas para o driver.
+ */
+void ecf_bematech::load_specific(void)
+{
+	std::ifstream   hnd;
+	std::string		line;
+	char			buff[2048];
+
+	debug_log(std::string("ecf_bematech::load_specific(" + 
+		dquote(m_cfg_file.c_str()) + std::string(")")));
+	
+	if (!m_cfg_file.empty()) {
+		if (!fs::found(m_cfg_file)) {
+			throw spooler_exp(std::string("Configuracoes do driver (") + 
+							  dquote(m_cfg_file.c_str()) + 
+							  std::string(") nao encontradas"));
+		}
+
+		try {
+			hnd.open(m_cfg_file.c_str(), std::ifstream::in);
+			hnd.exceptions(std::ios::badbit);
+
+			m_specific.clear();
+
+			do  {
+				memset(buff, 0, sizeof(buff));
+				hnd.getline(buff, sizeof(buff));
+				line = buff;
+				if (!hnd.eof())
+					m_specific.from_raw_data(line);
+			} while (!hnd.eof());
+			hnd.close();
+
+			xdebug_log(std::string(BEMATECH_IGNORAR_POUCO_PAPEL) +
+					   std::string(" [") +
+					   m_specific.get_value_by_key(
+					   BEMATECH_IGNORAR_POUCO_PAPEL).c_str() +
+					   std::string("]"));
+			m_ignorar_pouco_papel = (atoi(m_specific.get_value_by_key(
+								BEMATECH_IGNORAR_POUCO_PAPEL).c_str()) > 0);
+			
+			xdebug_log(std::string(BEMATECH_REC_FOLDER) + std::string(" [") +
+						m_specific.get_value_by_key(
+						BEMATECH_REC_FOLDER).c_str() + std::string("]"));
+			m_rec_folder = m_specific.get_value_by_key(
+						BEMATECH_REC_FOLDER).c_str();
+		}
+		catch (...) {
+			error_log(std::string("ecf_bematech::load_specific(): ") +
+				std::string("Erro ao carregar parametros."));
+			
+			bool fim = hnd.eof();
+
+			if (hnd.is_open())
+				hnd.close();
+
+			if (!fim)
+				throw;
+		}
+	}
+	else {
+		debug_log(std::string("ecf_bematech::load_specific()") + 
+			std::string("Nenhum arquivo de configuracoes especificas informado"));
+		
+		xdebug_log("DEFAULT : " + std::string(BEMATECH_IGNORAR_POUCO_PAPEL) +
+			std::string(" = 0"));
+		m_ignorar_pouco_papel = 0;
+		
+		xdebug_log("DEFAULT : " + std::string(BEMATECH_REC_FOLDER) +
+			std::string(" = '") + std::string(BEMATECH_OUTPUT_PATH) + 
+			std::string("'"));
+		m_rec_folder = BEMATECH_OUTPUT_PATH;
+	}
+}
+
+
+/**
+ \brief Retorna flag para ignorar ou nao o sensor de pouco papel.
+ */
+bool ecf_bematech::ignorar_pouco_papel(void)
+{
+	return m_ignorar_pouco_papel;
+}
+
+
+/**
+ \brief Define flag para ignorar meios de pagamento, em comprovantes nao
+ fiscais (de saida).
+ */
+void ecf_bematech::set_dont_pay(void)
+{
+	m_dont_pay = true;
+}
+
+
+/**
+ \brief Redefine (para o valor original) a flag que sinaliza quando meios de
+ pagamento devem ser suprimidos. Por padrao = FALSE.
+ */
+void ecf_bematech::reset_dont_pay(void)
+{
+	m_dont_pay = false;
+}
+
+
+/**
+ \brief Obtém o valor da flag de supressão de meios de pagamento (em compro-
+ vantes não fiscais).
+ */
+bool ecf_bematech::get_dont_pay(void)
+{
+	return m_dont_pay;
 }

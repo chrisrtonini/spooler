@@ -22,8 +22,14 @@
 
 #include <stdlib.h>
 
+#include <iostream>
+#include <iomanip>
+
+#include "datapair.h"
 #include "ecfbematech.h"
 #include "bemafi_cv0909.h"
+
+#include "../config.h"
 
 #define BEMATECH_TOTAL_TOTCNF_CV0909	30
 
@@ -31,28 +37,53 @@
 #define BEMATECH_SIZE_TOTCNF_CV0909		15
 #define BEMATECH_SIZE_RELGER_CV0909		15
 
+#define BEMATECH_TOTAL_ALIQS_CV0909		60
+
 #define BEMATECH_TXT_SANGRIA_CV0909		"SANGRIA"
 #define BEMATECH_TXT_SUPRIMENTO_CV0909	"FUNDO DE TROCO"
+
+#define BEMATECH_SPEC_CNF_SAIDA			"cnf_saida"
 
 
 class ecf_bematech_cv0909: public ecf_bematech 
 {
 	public:
-				ecf_bematech_cv0909(void);
+							ecf_bematech_cv0909(const std::string& cfg_file = "");
 		
-		short	get_totalizador_cnf(const std::string& tot);
-		short	get_id_forma_pgto(const std::string& fpgto);
-		short   get_prox_forma_pgto(void);
+		short				get_idx_aliquota(const aliq_trib::aliquota& aliq);
+		short				get_totalizador_cnf(const std::string& tot);
+		short				get_id_forma_pgto(const std::string& fpgto);
+		short				get_prox_forma_pgto(void);
 		
-		void	set_forma_pgto(const std::string& forma,
-								const std::string& vinc);
-		void	set_totalizador(const std::string& descr, 
-								const std::string& tipo);
-		void	set_rel_gerencial(const std::string& titulo);
+		void				set_forma_pgto(const std::string& forma,
+											const std::string& vinc);
+		void				set_totalizador(const std::string& descr, 
+											const std::string& tipo);
+		void				set_rel_gerencial(const std::string& titulo);
+		std::string			get_tab_aliq(void);
+		void				reg_nao_fiscal(const std::string& tot_cnf,
+											float valor);
+		void				pagamento(const std::string& fpgto, float valor);
+		void				abre_credito_debito(const std::string& fpgto, 
+												float valor, unsigned int coo,
+												const std::string& doc,
+												const std::string& nome,
+												const std::string& endr);
+		void				inicia_fechamento(float acresc);
+		void				inicia_fechamento_nao_fiscal(unsigned char tipo,
+															float valor);
+		void				converte_mfd(int tipo, const std::string& ini,
+											const std::string& fim,
+											const std::string& origem,
+											const std::string& destino,
+											int fmt = ECF_CONV_MFD_TEXTO,
+											int usr = 1);
 
-	protected:
 
 	private:
+		std::vector<bool>   m_use_ccd;
+
+		short				get_next_pgto_ccd(void);
 };
 
 #endif // _ECFBEMATECHCV0909_H_

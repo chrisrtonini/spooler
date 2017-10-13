@@ -24,15 +24,16 @@
  \brief Instancia biblioteca de ECF.
  \param vendor Identificação do fabricante. Atua como seletor da biblioteca a
  ser instanciada.
+ \param cfg_file Path do arquivo de configurações do driver, caso haja.
  \returns Ponteiro para instância da biblioteca de ECF.
  */
-ecf* factory::create_ecf(ECF_VENDOR vendor)
+ecf* factory::create_ecf(ECF_VENDOR vendor, const std::string& cfg_file)
 {
 	if (vendor == BEMATECH) {
-		return new ecf_bematech();
+		return new ecf_bematech(cfg_file);
 	}
 	else if (vendor == BEMATECH_CV0909) {
-		return new ecf_bematech_cv0909();
+		return new ecf_bematech_cv0909(cfg_file);
 	}
 }
 

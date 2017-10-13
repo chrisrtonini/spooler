@@ -38,25 +38,31 @@ txt_writer::txt_writer(std::ostream* out) :
  */
 void txt_writer::write_packet(const response_packet& pkt)
 {
+	size_t cnt = 0;
 	try {
-std::cerr << std::endl << tags::packet_tags::begin_tag() << std::endl;
+		debug_log(std::string("arqret #") + into_string(++cnt) +
+			std::string("\"") + tags::packet_tags::begin_tag() +
+			std::string("\""));
 		*m_out << tags::packet_tags::begin_tag() << std::endl;
 
-std::cerr << tags::packet_tags::type(pkt.type());
+		debug_log(std::string("arqret #") + into_string(++cnt) +
+			std::string("\"") + tags::packet_tags::type(pkt.type()) +
+			pkt.context_tag() + std::string("\""));
 		*m_out << tags::packet_tags::type(pkt.type());
-
-std::cerr << pkt.context_tag() << std::endl;
 		*m_out << pkt.context_tag() << std::endl;
 
 		if ((pkt.type() == tags::tp_begin_session) ||
 		    (pkt.type() == tags::tp_status))   {
-std::cerr << SERVER_ID_TAG;
+			debug_log(std::string("arqret #") + into_string(++cnt) +
+				std::string("\"") + std::string(SERVER_ID_TAG) +
+				std::string(APP_NAME) + std::string(" - ") +
+				std::string(APP_DESCR) + std::string(" (") +
+				std::string(APP_VERSION) + std::string(".") +
+				std::string(APP_RELEASE) + std::string(APP_STATUS) +
+				std::string("\""));
 			*m_out << SERVER_ID_TAG;
-std::cerr << APP_NAME << " - " << APP_DESCR << " (";
 			*m_out << APP_NAME << " - " << APP_DESCR << " (";
-std::cerr << APP_VERSION << "." << APP_RELEASE << APP_STATUS;
 			*m_out << APP_VERSION << "." << APP_RELEASE << APP_STATUS;
-std::cerr << ")" << std::endl;
 			*m_out << ")" << std::endl;
 		}
 
@@ -64,11 +70,15 @@ std::cerr << ")" << std::endl;
 		    (pkt.ret_code() != PKT_RESPONSE_OK))	{
 			}
 		else	{
-std::cerr << SESSION_ID_TAG << pkt.session() << std::endl;
+			debug_log(std::string("arqret #") + into_string(++cnt) +
+				std::string("\"") + std::string(SESSION_ID_TAG) +
+				pkt.session() + std::string("\""));
 			*m_out << SESSION_ID_TAG << pkt.session() << std::endl;
 		}
 		
-std::cerr << pkt.ret_code() << std::endl;
+		// Codigo de retorno
+		debug_log(std::string("arqret #") + into_string(++cnt) +
+			dquote(into_string(pkt.ret_code()).c_str()));
 		*m_out << pkt.ret_code() << std::endl;
 		try {
 			bool head = true;
@@ -85,13 +95,18 @@ std::cerr << pkt.ret_code() << std::endl;
 					}
 					try {
 						int lines = obj.num_lines();
-std::cerr << obj.value() << std::endl;
+						// Retorno (dado) ou mensagem de erro
+						debug_log(std::string("arqret #") + into_string(++cnt) +
+							dquote(obj.value().c_str()));
 						*m_out << obj.value() << std::endl;
 						if (lines > 1)  {
 							bool inner = true;
 							while (inner)	{
 								try {
-std::cerr << obj.next_value() << std::endl;
+									// Mensagem (de erro)
+									debug_log(std::string("arqret #") +
+										into_string(++cnt) +
+										dquote(obj.next_value().c_str()));
 									*m_out << obj.next_value() << std::endl;
 								}
 								catch (pkt_param_exp& e)	{
@@ -115,7 +130,7 @@ std::cerr << obj.next_value() << std::endl;
 		catch (packet_exp& e)	{
 			// "Nenhum parametro definido"
 		}
-std::cerr << tags::packet_tags::end_tag() << std::endl;
+//std::cerr << tags::packet_tags::end_tag() << std::endl;
 		*m_out << tags::packet_tags::end_tag() << std::endl;
 	}
 	catch (...) {

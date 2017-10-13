@@ -48,6 +48,9 @@ void txt_collector::setup(const datapair& cfg,
 	m_cfg = const_cast<datapair*>(&cfg);
 	m_broker = broker;
 	m_writer = writer;
+	m_dir = new file_queue(m_cfg->get_value_by_key(APP_WORK_DIR).c_str(),
+					m_cfg->get_value_by_key(APP_CMD_PREFIX),
+					atol(m_cfg->get_value_by_key(APP_SCAN_DELAY).c_str()));
 }
 
 
@@ -59,43 +62,31 @@ int txt_collector::accept(void)
 	std::ifstream   cmd_stream;
 	txt_reader*		cmd_reader;
 	
-	DIR*			dir;
-	struct dirent*  item;
-	
 	int				code = COLLECTOR_RUNNING;
 	
 	bool			got_one = false;
 	std::string		tmp_name,
 					tmp_fpath;
-
+	std::string		prefix_name = m_cfg->get_value_by_key(APP_CMD_PREFIX);
+	
 	// Scan do diretório de trabalho, buscando
 	// por arquivos de comando...
 	try {
 		debug_log(std::string("txt_collector::accept() Scanning ") +
 		    m_cfg->get_value_by_key(APP_WORK_DIR));
+
 		while ((!got_one) && (keep_running()))	{
-			if ((dir = opendir(
-					m_cfg->get_value_by_key(APP_WORK_DIR).c_str())) == NULL) {
-				throw collector_exp(fs::err_opendir(errno));
+			tmp_name = m_dir->scan_files();
+			if (!tmp_name.empty())  {
+				got_one = true;
+				/*
+				xdebug_log(std::string("txt_collector::accept() \"") +
+				           tmp_name + std::string("\" selecionado"));
+				*/
+				break;
 			}
-		
-			while ((item = readdir(dir)) != NULL)   {
-				tmp_name = item->d_name;
-				if (tmp_name.find(
-						m_cfg->get_value_by_key(APP_CMD_PREFIX), 0) == 0) {
-					got_one = true;
-					debug_log(std::string("txt_collector::accept() Match: ") +
-					    tmp_name);
-					break;
-				}
-			}
-
-			if (closedir(dir) == -1)	{
-				throw collector_exp(fs::err_closedir(errno));
-			}
-
-			usleep(atol(m_cfg->get_value_by_key(APP_SCAN_DELAY).c_str()));
 		}
+
 		if (!keep_running())
 			code = COLLECTOR_STOP;
 	}
@@ -110,6 +101,7 @@ int txt_collector::accept(void)
 		// o conteúdo de um objeto de pacote de comando.
 		try {
 			m_failure = false;
+			m_mute = false;
 			tmp_fpath = m_cfg->get_value_by_key(APP_WORK_DIR);
 			tmp_fpath += tmp_name;
 			xdebug_log(std::string("txt_collector::accept() Processar") +
@@ -117,10 +109,10 @@ int txt_collector::accept(void)
 		
 			cmd_stream.open(tmp_fpath.c_str(), std::ifstream::in);
 
-			debug_log("txt_collector::accept() Instanciar reader");
+			//debug_log("txt_collector::accept() Instanciar reader");
 			cmd_reader = new txt_reader(&cmd_stream);
 
-			debug_log("txt_collector::accept() Carregar pacote");
+			//debug_log("txt_collector::accept() Carregar pacote");
 			m_packet = new request_packet();
 			cmd_reader->read_packet(m_packet);
 		
@@ -128,28 +120,31 @@ int txt_collector::accept(void)
 			fs::sys_unlink(tmp_fpath);
 			m_cmdfile = tmp_fpath;
 		}
+		catch (cortar_papel_exp& err_cut) {
+			m_failure = true;
+			// Processamento indicado como 'mute', pois não deve
+			// produzir nenhuma resposta.
+			// TODO: criar parâmetro de configuração para determinar este
+			//			comportamento.
+			m_mute = true;
+		}
 		catch (...) {
 			bool fim = cmd_stream.eof();
 			if (cmd_stream.is_open())
 				cmd_stream.close();
 
 			fs::sys_unlink(tmp_fpath);
+			m_cmdfile = tmp_fpath;
 
-			if (fim)
-				m_cmdfile = tmp_fpath;
-			else	{
-				// O indicador 'm_failure' permite que a saída (por 'throw')
-				// gere conteúdo em pacote de resposta, informando ao sistema
-				// integrado, o erro na coleta do comando.
+			if (!fim)   {
 				m_failure = true;
-				throw;
 			}
 		}
 
 		// Tendo carregado o pacote de comando, deve ser encaminhado
 		// para o callback, onde a comunicação com o dispositivo (ECF) será
 		// realizada, e o pacote de retorno produzido adequadamente.
-		debug_log("txt_collector::accept() Invocar 'callback()'");
+		//debug_log("txt_collector::accept() Invocar 'callback()'");
 		code = callback();
 		delete m_packet;
 	}
@@ -176,13 +171,13 @@ int txt_collector::callback(void)
 		switch (m_packet->type())
 		{
 			case tags::tp_execut		:
-				debug_log("txt_collector::callback() Comando de ECF");
+				//debug_log("txt_collector::callback() Comando de ECF");
 				pkt.session(m_packet->session());
 				pkt.id(m_packet->id());
 				m_broker->trade(*m_packet, &pkt);
 				break;
 			case tags::tp_begin_session :
-				debug_log("txt_collector::callback() Abertura de sessao");
+				//debug_log("txt_collector::callback() Abertura de sessao");
 				if (!m_session.created())   {
 					pkt.session(m_session.generate());
 					xdebug_log(
@@ -197,7 +192,7 @@ int txt_collector::callback(void)
 				}
 				break;
 			case tags::tp_end_session   :
-				debug_log("txt_collector::callback() Encerramento de sessao");
+				//debug_log("txt_collector::callback() Encerramento de sessao");
 				pkt.session(m_packet->session());
 				if (!m_session.created())  {
 					warn_log(
@@ -207,7 +202,7 @@ int txt_collector::callback(void)
 				}
 				else	{
 					if (m_session.match(m_packet->session()))   {
-						debug_log("txt_collector::callback() Eliminar sessao");
+						//debug_log("txt_collector::callback() Eliminar sessao");
 						m_session.reset();
 						pkt.ret_code(PKT_RESPONSE_OK);
 					}
@@ -221,7 +216,7 @@ int txt_collector::callback(void)
 				}
 				break;
 			case tags::tp_status		:
-				debug_log("txt_collector::callback() Status de sessao");
+				//debug_log("txt_collector::callback() Status de sessao");
 				if (m_session.created())	{
 					warn_log("txt_collector::callback() Sessao ja esta aberta");
 					pkt.session(m_session.session_id());
@@ -236,7 +231,7 @@ int txt_collector::callback(void)
 				}
 				break;
 			case tags::tp_reset			:
-				debug_log("txt_collector::callback() Reset de sessao");
+				//debug_log("txt_collector::callback() Reset de sessao");
 				m_session.reset();
 				pkt.session(m_packet->session());
 				pkt.ret_code(PKT_RESPONSE_OK);
@@ -257,8 +252,10 @@ int txt_collector::callback(void)
 	
 	
 	try {
-		debug_log("txt_collector::callback() Invocar 'writer()'");
-		m_writer(m_cmdfile, const_cast<response_packet*>(&pkt));
+		if (!m_mute)	{
+			//debug_log("txt_collector::callback() Invocar 'writer()'");
+			m_writer(m_cmdfile, const_cast<response_packet*>(&pkt));
+		}
 	}
 	catch (...) {
 		error_log(

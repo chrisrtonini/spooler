@@ -123,6 +123,11 @@ namespace cmd
 		SND_CANCNAOFISCALPOS,
 		SND_ABRE_GERENCIAL,
 		GET_NAOFISC_ABERTO,
+		GET_TAB_ALIQ,
+		GET_TAB_RELGER,
+		GET_TAB_TOTCNF,
+		GET_TAB_FPGTO,
+		CONVERTEMFD,
 		OUT_OF_BOUND
 	};
 
@@ -215,6 +220,11 @@ namespace cmd
 		"snd_cancnaofiscalpos",
 		"snd_abre_gerencial",
 		"get_naofisc_aberto",
+		"get_tab_aliquotas",
+		"get_tab_relgerenciais",
+		"get_tab_totcnf",
+		"get_tab_formaspgto",
+		"convertemfd",
 		""
 	};
 
