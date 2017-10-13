@@ -1,10 +1,22 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* libbemamfd2.so presente no sistema */
+#undef BEMAMFD2_SUPPORT
+
+/* libbemamfd3.so presente no sistema */
+#undef BEMAMFD3_SUPPORT
+
+/* libbemamfd.so presente no sistema */
+#undef BEMAMFD_SUPPORT
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `bemafiscal' library (-lbemafiscal). */
+#undef HAVE_LIBBEMAFISCAL
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
@@ -34,6 +46,9 @@
    */
 #undef LT_OBJDIR
 
+/* Define to 1 if your C compiler doesn't accept -c and -o together. */
+#undef NO_MINUS_C_MINUS_O
+
 /* Name of package */
 #undef PACKAGE
 
@@ -48,6 +63,9 @@
 
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
