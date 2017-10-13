@@ -4,3 +4,26 @@ biblioteca da Bematech, com sufixo "CV0909".
 A partir do release 3.4, o pacote passou a incluir uma serie de utilitarios
 para realizacao de carga das tabelas de ECF, a partir do conteudo de arquivos
 de texto.
+
+No release 3.5.10b foi incluido um utilitario, para no momento da inicializacao
+do servico (ecf_spooler) atualizar a tabela de aliquotas tributarias, contida
+no arquivo /etc/bemafi.xml, de acordo com o conteudo da memoria fiscal.
+Obs.: a biblioteca da Bematech nao efetua essa menutencao no arquivo, e os
+		testes demonstraram que o comando Bematech_FI_VendeItem *depende* do
+		conteudo do arquivo (ignorando o conteudo da memoria fiscal).
+Ainda neste mesmo release, foi incluida uma implementacao especifica para ECFs
+do convenio 09/09, pois a tabela de aliquotas tributarias nesses equipamentos
+nao possui 16 aliquotas, mas sim um total de 60, sendo 30 para ICMS e 30 de ISS.
+
+O release 3.8.1b instala tambem o utilitario rc4_crypt, que porporciona, atraves
+da linha de comando, a possibilidade de cifrar e decifrar strings utilizando o
+protocolo RC4.
+
+A partir da versao 4.0, a aplicacao oferece suporte aas rotinas de download e
+conversao (para texto) da MFD. Alem disso, os scripts de suporte aa sua ope-
+racao, passam a ser distribuidos separadamente, no formato de um modulo PERL.
+
+Diversos bugs foram corrigidos, no sentido de melhorar o suporte a download
+da MFD, na versao 4.0.2. Foram corrigidas tambem dependencias quebradas para
+a construcao da aplicacao em ambiente de producao (notadamente, para geracao
+de manuais).
