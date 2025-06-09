@@ -10,7 +10,7 @@
 
 AUTOMAKE_OPTIONS = gnu
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = src utils/rc4_crypt man
+SUBDIRS = src utils/rc4_crypt man tests
 EXTRA_DIST = man/rc4_crypt.pod \
 				man/spooler.cfg.pod \
 				man/spooler.pod
