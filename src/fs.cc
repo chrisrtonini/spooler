@@ -25,7 +25,7 @@
  \param mask Máscara (conforme man 3p umask).
  \note Deve-se levar em consideração que ao valor de "mask" aplicam-se as
  máscaras (& 0777) para diretórios e (& 0666) para arquivos. Desta forma,
- a invodação de fs::set_umask(022), implicará na criação de arquivos com as
+ a invocação de fs::set_umask(022), implicará na criação de arquivos com as
  permissões 0644 (022 & 0666)
  */
 void fs::set_umask(mode_t mask) NO_THROW
