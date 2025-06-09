@@ -337,7 +337,7 @@ void txt_reader::read_packet(request_packet* pkt)
 					}
 					else	{
 						m_in->exceptions(excp);
-						msg = MSG_PARAM_MALFORMED + std::string(": ") = line;
+                                                msg = MSG_PARAM_MALFORMED + std::string(": ") + line;
 						throw rqt_reader_exp(msg);
 					}
 				}
