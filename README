@@ -20,7 +20,7 @@ FUNCIONAMENTO:
 
 O spooler ira' recolher arquivos de comando, nomeados de acordo com a mascara
 especificada (normalmente 'arqcmd.*') no diretorio de trabalho especificado.
-O monitoramente e' feito por notificadao do kernel (inotify), portanto, ja' no
+O monitoramento e' feito por notificação do kernel (inotify), portanto, ja' no
 momento que o arquivo for gravado, ja' sera' sinalizado. Assim, e' recomendavel
 que a aplicacao integrada gere arquivos com outro nome, e apenas RENOMEIE para
 o formato da mascara, APOS concluir sua edicao.
