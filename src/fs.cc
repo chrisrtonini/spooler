@@ -46,9 +46,9 @@ void fs::set_umask(mode_t mask) NO_THROW
 bool fs::create_node(const std::string& path, mode_t mode, dev_t dev) 
 	throw(fs_exp)
 {
-	if (mknod(path.c_str(), mode, dev) != -1)   {
-		throw fs_exp(fs::fs_err_msg(errno));
-	}
+       if (mknod(path.c_str(), mode, dev) == -1)   {
+               throw fs_exp(fs::fs_err_msg(errno));
+       }
 
 	return true;
 }
