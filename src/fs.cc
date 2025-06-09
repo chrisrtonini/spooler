@@ -43,14 +43,14 @@ void fs::set_umask(mode_t mask) NO_THROW
  \returns Valor lógico, indicando sucesso ou falha na operação.
  \throws fs_exp Caso ocorra algum erro de syscall.
  */
-bool fs::create_node(const std::string& path, mode_t mode, dev_t dev) 
-	throw(fs_exp)
+bool fs::create_node(const std::string& path, mode_t mode, dev_t dev)
+       throw(fs_exp)
 {
        if (mknod(path.c_str(), mode, dev) == -1)   {
                throw fs_exp(fs::fs_err_msg(errno));
        }
 
-	return true;
+       return true;
 }
 
 
